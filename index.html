@@ -1,232 +1,231 @@
-/* ============================================================
-   Soltessa — shared shell + helpers
-   Renders the persistent nav rail, top bar, tenant switcher.
-   Every page calls Soltessa.mount({ active: 'dashboard' }).
-   ============================================================ */
-(function () {
-  const ICONS = {
-    dashboard: '<path d="M3 13h8V3H3v10Zm0 8h8v-6H3v6Zm10 0h8V11h-8v10Zm0-18v6h8V3h-8Z"/>',
-    studio: '<path d="M3 7l9-4 9 4-9 4-9-4Z"/><path d="M3 7v6l9 4 9-4V7"/><path d="M12 11v10"/>',
-    catalog: '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
-    quotes: '<path d="M9 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-4"/><path d="M14 3l7 7"/><path d="M14 3v5a2 2 0 0 0 2 2h5"/><path d="M8 13h5M8 17h6"/>',
-    purchasing: '<circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l2.4 12.4a1.5 1.5 0 0 0 1.5 1.2h8.7a1.5 1.5 0 0 0 1.5-1.2L22 7H6"/>',
-    lots: '<path d="M3 21h18"/><path d="M5 21V8l7-4 7 4v13"/><path d="M9 21v-6h6v6"/>',
-    scheduling: '<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
-    sales: '<path d="M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z"/><path d="M3 21v-1a6 6 0 0 1 6-6h6a6 6 0 0 1 6 6v1"/>',
-    service: '<path d="M14.7 6.3a4 4 0 0 0-5.4 5.4l-6 6 2 2 6-6a4 4 0 0 0 5.4-5.4l-2.5 2.5-2-2 2.5-2.5Z"/>',
-    settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 1 1-4 0v-.1A1.6 1.6 0 0 0 6 19.4l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.6 1.6 0 0 0 3 13.9H3a2 2 0 1 1 0-4h.1A1.6 1.6 0 0 0 4.6 7.3l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.6 1.6 0 0 0 9 4.6V4a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 2.7 1.1l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0 .9 2.6H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1Z"/>',
-    search: '<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>',
-    bell: '<path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/>',
-    chevron: '<path d="m6 9 6 6 6-6"/>',
-    chevronR: '<path d="m9 6 6 6-6 6"/>',
-    arrowR: '<path d="M5 12h14M13 6l6 6-6 6"/>',
-    plus: '<path d="M12 5v14M5 12h14"/>',
-    filter: '<path d="M22 3H2l8 9.5V19l4 2v-8.5L22 3Z"/>',
-    download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5M12 15V3"/>',
-    check: '<path d="M20 6 9 17l-5-5"/>',
-    clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
-    alert: '<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/>',
-    info: '<circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/>',
-    dollar: '<path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
-    file: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/>',
-    box: '<path d="M21 8 12 3 3 8v8l9 5 9-5V8Z"/><path d="M3 8l9 5 9-5M12 13v8"/>',
-    layers: '<path d="m12 2 9 5-9 5-9-5 9-5Z"/><path d="m3 12 9 5 9-5M3 17l9 5 9-5"/>',
-    calc: '<rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M8 10h2M12 10h2M16 10h0M8 14h2M12 14h2M16 14h0M8 18h6"/>',
-    map: '<path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3V6Z"/><path d="M9 3v15M15 6v15"/>',
-    home: '<path d="m3 11 9-8 9 8"/><path d="M5 9v11h14V9"/><path d="M10 20v-6h4v6"/>',
-    users: '<circle cx="9" cy="8" r="4"/><path d="M2 20a7 7 0 0 1 14 0"/><path d="M17 5a4 4 0 0 1 0 8M22 20a7 7 0 0 0-5-6.7"/>',
-    truck: '<path d="M1 4h13v12H1zM14 8h4l3 3v5h-7"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="19" r="2"/>',
-    swatch: '<path d="M2 12a10 10 0 1 0 10-10 10 10 0 0 0-3 19.5"/><circle cx="9" cy="9" r="1.5"/><circle cx="15" cy="9" r="1.5"/>',
-    edit: '<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5Z"/>',
-    x: '<path d="M18 6 6 18M6 6l12 12"/>',
-    grid: '<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>',
-    list: '<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',
-    trend: '<path d="M22 7 13.5 15.5 8.5 10.5 2 17"/><path d="M16 7h6v6"/>',
-    cube: '<path d="M21 8 12 3 3 8v8l9 5 9-5V8Z"/><path d="M3 8l9 5 9-5"/>',
-    tag: '<path d="M20.6 13.4 12 22l-9-9V3h10l7.6 7.6a2 2 0 0 1 0 2.8Z"/><circle cx="7.5" cy="7.5" r="1.5"/>',
-    send: '<path d="M22 2 11 13M22 2 15 22l-4-9-9-4 20-7Z"/>',
-    link: '<path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1.5-1.5"/>',
-    ruler: '<path d="M21.3 8.7 8.7 21.3a1 1 0 0 1-1.4 0l-4.6-4.6a1 1 0 0 1 0-1.4L15.3 2.7a1 1 0 0 1 1.4 0l4.6 4.6a1 1 0 0 1 0 1.4Z"/><path d="m7.5 10.5 2 2M11 7l2 2M14.5 3.5l2 2M4 14l2 2"/>',
-    inbox: '<path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.5 5.5 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.5-6.5A2 2 0 0 0 16.7 4H7.3a2 2 0 0 0-1.8 1.5Z"/>',
-    palette: '<circle cx="13.5" cy="6.5" r="1.5"/><circle cx="17.5" cy="10.5" r="1.5"/><circle cx="8.5" cy="7.5" r="1.5"/><circle cx="6.5" cy="12.5" r="1.5"/><path d="M12 2a10 10 0 0 0 0 20 2.5 2.5 0 0 0 2.5-2.5c0-.7-.3-1.3-.7-1.8a2.5 2.5 0 0 1 1.8-4.2H18a4 4 0 0 0 4-4 10 10 0 0 0-10-8Z"/>',
-    sliders: '<path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/>',
-    book: '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/>',
-    pin: '<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0Z"/><circle cx="12" cy="10" r="3"/>',
-    copy: '<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
-    flag: '<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1Z"/><path d="M4 22v-7"/>',
-  };
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Dashboard · Soltessa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/app.css">
+</head>
+<body>
+<div id="app" data-page="dashboard"></div>
+<div class="drawer-scrim" id="scrim"></div>
 
-  function icon(name, cls) {
-    const p = ICONS[name] || ICONS.dashboard;
-    return `<svg class="${cls||''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
-  }
+<template id="page">
+  <div class="page-head">
+    <div class="page-head-row">
+      <div>
+        <div class="eyebrow">Tuesday · June 29, 2026 &nbsp;·&nbsp; Builders Design Group</div>
+        <h1 class="page-title">Good morning, Taylor</h1>
+        <p class="page-sub">Four communities in flight across two builders. Six selection sessions need attention today, and two subcontractor insurance certificates lapse this week.</p>
+      </div>
+      <div class="flex gap-10">
+        <button class="btn"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5M12 15V3"/></svg>Export brief</button>
+        <button class="btn primary"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg>New selection session</button>
+      </div>
+    </div>
+  </div>
 
-  const NAV = [
-    { sec: 'Workspace' },
-    { id: 'dashboard',  label: 'Dashboard',          icon: 'dashboard',  href: 'index.html' },
-    { id: 'studio',     label: 'Design Studio',       icon: 'studio',     href: 'design-studio.html', badge: '6' },
-    { id: 'catalog',    label: 'Pricing & Catalog',   icon: 'catalog',    href: 'catalog.html' },
-    { id: 'quotes',     label: 'Selections & Quotes', icon: 'quotes',     href: 'quotes.html', badge: '4' },
-    { sec: 'Operations' },
-    { id: 'purchasing', label: 'Purchasing',          icon: 'purchasing', href: 'purchasing.html' },
-    { id: 'lots',       label: 'Lots & Communities',  icon: 'lots',       href: 'lots.html' },
-    { id: 'scheduling', label: 'Scheduling',          icon: 'scheduling', href: 'scheduling.html' },
-    { sec: 'Relationships' },
-    { id: 'sales',      label: 'Sales & Buyers',      icon: 'sales',      href: 'sales.html' },
-    { id: 'service',    label: 'Customer Service',    icon: 'service',    href: 'service.html' },
-    { sec: 'Administration' },
-    { id: 'settings',   label: 'Settings & Admin',    icon: 'settings',   href: 'settings.html' },
+  <!-- Signature: the data lineage rail -->
+  <div style="margin-bottom:22px">
+    <div class="flex items-center between mb-16" style="margin-bottom:9px">
+      <div class="eyebrow" style="margin:0">The Soltessa lineage &nbsp;·&nbsp; one home, end to end</div>
+      <span class="muted fs-12">Lot 14 · Sienna Pass · Acacia 2210 · the Patels</span>
+    </div>
+    <div class="lineage" id="lineage"></div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpi-grid mb-16" id="kpis"></div>
+
+  <div class="grid grid-2-1 mb-16">
+    <!-- Attention queue -->
+    <div class="card">
+      <div class="card-head">
+        <div>
+          <div class="card-title">${ICON_inbox} Needs your attention</div>
+          <div class="card-sub">Items blocking progress along the pipeline</div>
+        </div>
+        <a class="btn sm ghost" href="quotes.html">View all</a>
+      </div>
+      <div class="card-body flush">
+        <div class="tbl-wrap">
+          <table class="tbl tbl-clickable">
+            <thead><tr><th>Item</th><th>Stage</th><th>Lot / Community</th><th>Owner</th><th class="right">Status</th></tr></thead>
+            <tbody id="attn"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Allowance pulse -->
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title">${ICON_dollar} Allowance pulse</div>
+      </div>
+      <div class="card-body">
+        <p class="muted fs-12" style="margin:0 0 16px">Live selections vs. builder allowance across active lots this week.</p>
+        <div id="allow"></div>
+        <div class="notice accent mt-16">
+          ${ICON_info}
+          <div>Net-option logic applied — upgrades show the <b>net</b> over standard, never gross.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-2">
+    <!-- Activity feed -->
+    <div class="card">
+      <div class="card-head"><div class="card-title">${ICON_clock} Recent activity</div></div>
+      <div class="card-body">
+        <div class="feed" id="feed"></div>
+      </div>
+    </div>
+
+    <!-- This week installs + expiring insurance -->
+    <div class="stack gap-16">
+      <div class="card">
+        <div class="card-head"><div class="card-title">${ICON_truck} This week's installs</div><span class="badge accent"><span class="d"></span>7 scheduled</span></div>
+        <div class="card-body flush">
+          <div class="tbl-wrap"><table class="tbl"><tbody id="installs"></tbody></table></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div class="card-title">${ICON_alert} Insurance expiring</div></div>
+        <div class="card-body">
+          <div class="stack gap-12" id="insurance"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script src="assets/data/demo.js"></script>
+<script src="assets/js/app.js"></script>
+<script>
+  // inline icon placeholders resolved before mount
+  const S = window.Soltessa;
+  document.getElementById('page').innerHTML = document.getElementById('page').innerHTML
+    .replaceAll('${ICON_inbox}', S.icon('inbox'))
+    .replaceAll('${ICON_dollar}', S.icon('dollar'))
+    .replaceAll('${ICON_info}', S.icon('info'))
+    .replaceAll('${ICON_clock}', S.icon('clock'))
+    .replaceAll('${ICON_truck}', S.icon('truck'))
+    .replaceAll('${ICON_alert}', S.icon('alert'));
+
+  S.mount({ active: 'dashboard' });
+
+  // ---- lineage rail ----
+  const steps = [
+    { n: '01', label: 'Plan + Allowance', state: 'Acacia 2210', cls: 'done' },
+    { n: '02', label: 'Selection', state: 'Finalized', cls: 'done' },
+    { n: '03', label: 'Price Request', state: 'Answered', cls: 'done' },
+    { n: '04', label: 'Quote', state: 'Approved', cls: 'done' },
+    { n: '05', label: 'Contract', state: 'Signed', cls: 'done' },
+    { n: '06', label: 'Purchase Orders', state: '3 issued · 1 change order', cls: 'current' },
+    { n: '07', label: 'Lot', state: 'In production', cls: '' },
+    { n: '08', label: 'Schedule', state: 'Install Aug 12', cls: '' },
+    { n: '09', label: 'Service', state: '—', cls: '' },
   ];
+  document.getElementById('lineage').innerHTML = steps.map((s, i) => {
+    const sep = i < steps.length - 1 ? `<span class="lineage-sep">${S.icon('chevronR')}</span>` : '';
+    return `<div class="lineage-step ${s.cls}">
+      <span class="ls-num">${s.n}</span>
+      <span><span class="ls-label">${s.label}</span><br><span class="ls-state">${s.state}</span></span>
+    </div>${sep}`;
+  }).join('');
 
-  const TENANTS = [
-    { id: 'bdg',  name: 'Builders Design Group', short: 'BD', role: 'Pilot tenant · Las Vegas' },
-    { id: 'sun',  name: 'Sunridge Communities',  short: 'SR', role: 'Builder client' },
-    { id: 'mesa', name: 'Mesa Verde Homes',      short: 'MV', role: 'Builder client' },
+  // ---- KPIs ----
+  const kpis = [
+    { label: 'Active lots', icon: 'lots', value: '83', delta: '+6 this month', d: 'up', s: [60,64,67,71,74,78,83] },
+    { label: 'Pending selections', icon: 'studio', value: '14', delta: '6 need attention', d: 'flat', s: [9,11,10,13,12,15,14] },
+    { label: 'Open price requests', icon: 'tag', value: '5', delta: 'avg 1.4-day turnaround', d: 'up', s: [8,7,9,6,5,6,5] },
+    { label: 'Open quotes', icon: 'quotes', value: '4', delta: '$182k in flight', d: 'flat', s: [3,5,4,6,5,4,4] },
+    { label: 'POs awaiting issue', icon: 'purchasing', value: '11', delta: '3 split by supplier', d: 'down', s: [18,16,15,13,12,11,11] },
+    { label: 'Installs this week', icon: 'truck', value: '7', delta: '2 pickups · 5 on-site', d: 'up', s: [4,5,3,6,5,7,7] },
   ];
+  document.getElementById('kpis').innerHTML = kpis.map(k => `
+    <div class="kpi">
+      <div class="kpi-label">${S.icon(k.icon)} ${k.label}</div>
+      <div class="kpi-value">${k.value}</div>
+      <div class="kpi-delta ${k.d}">${k.delta}</div>
+      ${S.spark(k.s)}
+    </div>`).join('');
 
-  function buildRail(active) {
-    const items = NAV.map(n => {
-      if (n.sec) return `<div class="nav-section-label">${n.sec}</div>`;
-      const isActive = n.id === active ? 'active' : '';
-      const badge = n.badge ? `<span class="nav-badge">${n.badge}</span>` : '';
-      return `<a class="nav-item ${isActive}" href="${n.href}">${icon(n.icon)}<span>${n.label}</span>${badge}</a>`;
-    }).join('');
+  // ---- attention queue ----
+  const attn = [
+    ['Calacatta quartz price', 'Price Request', 'Lot 22 · Desert Vista', 'Cambria', '<span class="badge warn"><span class="d"></span>Awaiting vendor</span>'],
+    ['Upgraded kitchen package', 'Quote', 'Lot 09 · Cholla Ridge', 'Designer', '<span class="badge info"><span class="d"></span>Pending approval</span>'],
+    ['Stair-nose transition', 'Selection', 'Lot 31 · Desert Vista', 'Designer', '<span class="badge danger"><span class="d"></span>Cutoff in 2 days</span>'],
+    ['Tile PO — primary bath', 'Purchase Order', 'Lot 14 · Sienna Pass', 'Purchasing', '<span class="badge neutral"><span class="d"></span>Change order</span>'],
+    ['Color: cabinet finish', 'Color Selection', 'Lot 17 · Sienna Pass', 'Buyer', '<span class="badge warn"><span class="d"></span>Outstanding</span>'],
+    ['Carpet allowance overage', 'Selection', 'Lot 05 · Aspen Meadows', 'Sales', '<span class="badge info"><span class="d"></span>Needs sign-off</span>'],
+  ];
+  document.getElementById('attn').innerHTML = attn.map(r => `
+    <tr><td class="primary">${r[0]}</td><td><span class="tag">${r[1]}</span></td>
+    <td>${r[2]}</td><td class="muted">${r[3]}</td><td class="right">${r[4]}</td></tr>`).join('');
 
-    return `
-    <aside class="rail" id="rail">
-      <div class="rail-brand">
-        <svg class="rail-logo" viewBox="0 0 32 32" fill="none" aria-hidden="true">
-          <rect x="1" y="1" width="30" height="30" rx="8" fill="#1c222c"/>
-          <path d="M16 6l8 4.5v9L16 24l-8-4.5v-9L16 6Z" stroke="#c2703d" stroke-width="1.6"/>
-          <path d="M16 11l4 2.25v4.5L16 20l-4-2.25v-4.5L16 11Z" fill="#c2703d"/>
-        </svg>
-        <span class="rail-wordmark">Soltessa<span class="dot">.</span></span>
-      </div>
+  // ---- allowance pulse ----
+  const allow = [
+    { cat: 'Flooring', used: 15240, cap: 14200 },
+    { cat: 'Cabinets', used: 9120, cap: 9800 },
+    { cat: 'Countertops', used: 6980, cap: 6400 },
+  ];
+  document.getElementById('allow').innerHTML = allow.map(a => {
+    const pct = Math.min(100, (a.used / a.cap) * 100);
+    const over = a.used > a.cap;
+    const warn = !over && pct > 88;
+    const delta = a.used - a.cap;
+    const cls = over ? 'over' : (warn ? 'warn' : '');
+    const dtxt = over ? `+$${delta.toLocaleString()} over` : `$${Math.abs(delta).toLocaleString()} under`;
+    return `<div style="margin-bottom:15px">
+      <div class="allow-row"><span class="cat">${a.cat}</span>
+        <span class="delta ${over?'over':'under'}">${dtxt}</span></div>
+      <div class="allow-track"><div class="allow-fill ${cls}" style="width:${pct}%"></div></div>
+      <div class="muted fs-12 tnum" style="margin-top:4px">$${a.used.toLocaleString()} of $${a.cap.toLocaleString()} allowance</div>
+    </div>`;
+  }).join('');
 
-      <div class="tenant-switch" id="tenantSwitch" role="button" tabindex="0" aria-label="Switch builder client">
-        <span class="tenant-chip" id="tChip">BD</span>
-        <span class="tenant-meta">
-          <span class="tenant-name" id="tName">Builders Design Group</span>
-          <span class="tenant-role" id="tRole">Pilot tenant · Las Vegas</span>
-        </span>
-        ${icon('chevron')}
-      </div>
+  // ---- feed ----
+  const feed = [
+    ['ok', 'check', '<b>Quote Q-1043</b> approved by Sunridge — Lot 09 upgraded kitchen', '18 min ago'],
+    ['accent', 'tag', '<b>Cambria</b> answered price request PR-228 — Calacatta Gold confirmed at $64/sq ft', '52 min ago'],
+    ['info', 'purchasing', '<b>3 POs</b> generated and split across Daltile, Shaw, KraftMaid — Lot 14', '1 hr ago'],
+    ['', 'studio', 'Selection finalized for <b>Lot 31 · Desert Vista</b> — Mesquite 3120', '2 hr ago'],
+    ['', 'truck', 'Install completed — <b>Lot 02 · Sienna Pass</b> hardwood great room', 'Yesterday'],
+    ['accent', 'edit', 'Change order CO-58 raised after re-selection on <b>Lot 14</b> primary bath tile', 'Yesterday'],
+  ];
+  document.getElementById('feed').innerHTML = feed.map(f => `
+    <div class="feed-item">
+      <div class="feed-dot ${f[0]}">${S.icon(f[1])}</div>
+      <div class="feed-body"><div class="t">${f[2]}</div><div class="feed-time">${f[3]}</div></div>
+    </div>`).join('');
 
-      <nav class="nav-scroll">${items}</nav>
+  // ---- installs ----
+  const installs = [
+    ['Mon', 'Hardwood great room', 'Lot 14 · Sienna Pass', 'Premier Floors'],
+    ['Tue', 'Cabinet set', 'Lot 09 · Cholla Ridge', 'Vegas Cabinet Co'],
+    ['Wed', 'Countertop template', 'Lot 22 · Desert Vista', 'StoneWorks'],
+    ['Thu', 'Tile — baths', 'Lot 17 · Sienna Pass', 'TileRight'],
+    ['Fri', 'Carpet — bedrooms', 'Lot 05 · Aspen Meadows', 'Premier Floors'],
+  ];
+  document.getElementById('installs').innerHTML = installs.map(r => `
+    <tr><td><span class="tag">${r[0]}</span></td><td class="primary">${r[1]}<div class="muted">${r[2]}</div></td>
+    <td class="muted right">${r[3]}</td></tr>`).join('');
 
-      <div class="rail-foot">
-        <span class="rail-avatar">TM</span>
-        <span class="who">Taylor Morgan<small>Design Center Lead</small></span>
-      </div>
-    </aside>`;
-  }
-
-  function buildTop() {
-    return `
-    <header class="topbar">
-      <button class="top-action btn-icon menu-toggle" id="menuToggle" aria-label="Open menu">${icon('list')}</button>
-      <div class="search">
-        ${icon('search')}
-        <input placeholder="Search lots, buyers, POs, selections…" aria-label="Search" />
-        <kbd>⌘K</kbd>
-      </div>
-      <div class="topbar-spacer"></div>
-      <button class="top-action" aria-label="Help">${icon('info')}</button>
-      <button class="top-action" aria-label="Notifications"><span class="ping"></span>${icon('bell')}</button>
-    </header>`;
-  }
-
-  function mount(opts) {
-    opts = opts || {};
-    const root = document.getElementById('app');
-    const railHtml = buildRail(opts.active);
-    const topHtml = buildTop();
-    root.insertAdjacentHTML('afterbegin', railHtml);
-    const main = document.createElement('div');
-    main.className = 'main';
-    main.innerHTML = topHtml;
-    const content = document.createElement('div');
-    content.className = 'content' + (opts.wide ? ' wide' : '');
-    content.innerHTML = root.dataset.content || '';
-    // move existing children flagged as page content
-    const tpl = document.getElementById('page');
-    if (tpl) content.innerHTML = tpl.innerHTML;
-    main.appendChild(content);
-    root.appendChild(main);
-
-    resolveIcons(document);
-    wireTenant();
-    wireMenu();
-    wireDrawers();
-  }
-
-  // any element with data-ic="name" gets the svg injected
-  function resolveIcons(scope) {
-    scope.querySelectorAll('[data-ic]').forEach(el => {
-      if (el.dataset.icDone) return;
-      el.insertAdjacentHTML('afterbegin', icon(el.dataset.ic));
-      el.dataset.icDone = '1';
-    });
-  }
-
-  function wireTenant() {
-    const sw = document.getElementById('tenantSwitch');
-    if (!sw) return;
-    let i = 0;
-    sw.addEventListener('click', () => {
-      i = (i + 1) % TENANTS.length;
-      const t = TENANTS[i];
-      document.getElementById('tChip').textContent = t.short;
-      document.getElementById('tName').textContent = t.name;
-      document.getElementById('tRole').textContent = t.role;
-    });
-    sw.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); sw.click(); } });
-  }
-
-  function wireMenu() {
-    const t = document.getElementById('menuToggle');
-    const rail = document.getElementById('rail');
-    if (t && rail) t.addEventListener('click', () => rail.classList.toggle('open'));
-  }
-
-  // generic drawer open/close via [data-drawer] triggers and #<id> drawers
-  function wireDrawers() {
-    document.body.addEventListener('click', e => {
-      const trig = e.target.closest('[data-drawer]');
-      if (trig) {
-        openDrawer(trig.getAttribute('data-drawer'));
-        return;
-      }
-      if (e.target.closest('[data-drawer-close]') || e.target.classList.contains('drawer-scrim')) {
-        closeDrawers();
-      }
-    });
-    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDrawers(); });
-  }
-  function openDrawer(id) {
-    const d = document.getElementById(id);
-    const s = document.getElementById('scrim');
-    if (d) d.classList.add('open');
-    if (s) s.classList.add('open');
-  }
-  function closeDrawers() {
-    document.querySelectorAll('.drawer.open').forEach(d => d.classList.remove('open'));
-    const s = document.getElementById('scrim'); if (s) s.classList.remove('open');
-  }
-
-  // little inline sparkline generator
-  function spark(values, w, h, color) {
-    w = w || 64; h = h || 22; color = color || 'var(--accent)';
-    const max = Math.max(...values), min = Math.min(...values);
-    const rng = (max - min) || 1;
-    const pts = values.map((v, i) => {
-      const x = (i / (values.length - 1)) * w;
-      const y = h - ((v - min) / rng) * (h - 3) - 1.5;
-      return `${x.toFixed(1)},${y.toFixed(1)}`;
-    }).join(' ');
-    return `<svg class="kpi-spark" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" fill="none">
-      <polyline points="${pts}" stroke="${color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" opacity=".55"/></svg>`;
-  }
-
-  window.Soltessa = { mount, icon, spark, openDrawer, closeDrawers, resolveIcons, TENANTS, NAV };
-})();
+  // ---- insurance ----
+  const ins = [
+    { name: 'Premier Floors', type: 'General liability', days: 4, cls: 'danger' },
+    { name: 'StoneWorks', type: 'Workers comp', days: 9, cls: 'warn' },
+  ];
+  document.getElementById('insurance').innerHTML = ins.map(i => `
+    <div class="flex items-center between">
+      <div><div class="fw-600">${i.name}</div><div class="muted fs-12">${i.type}</div></div>
+      <span class="badge ${i.cls}"><span class="d"></span>${i.days} days</span>
+    </div>`).join('');
+</script>
+</body>
+</html>

@@ -1,56 +1,153 @@
-/* ============================================================
-   Soltessa — fabricated demo data (BDG pilot tenant)
-   Las Vegas flooring / cabinetry / countertop finisher.
-   All names, lots, prices invented for prototype purposes.
-   ============================================================ */
-window.DEMO = (function () {
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Pricing & Catalog · Soltessa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/app.css">
+</head>
+<body>
+<div id="app" data-page="catalog"></div>
+<div class="drawer-scrim" id="scrim"></div>
 
-  const communities = [
-    { id: 'SP', name: 'Sienna Pass',      builder: 'Sunridge Communities', city: 'Henderson, NV',   lots: 48, status: { available: 9,  reserved: 6,  sold: 14, production: 13, closed: 6 } },
-    { id: 'CR', name: 'Cholla Ridge',     builder: 'Mesa Verde Homes',     city: 'North Las Vegas', lots: 36, status: { available: 5,  reserved: 4,  sold: 11, production: 10, closed: 6 } },
-    { id: 'DV', name: 'Desert Vista',     builder: 'Sunridge Communities', city: 'Summerlin, NV',   lots: 60, status: { available: 18, reserved: 7,  sold: 16, production: 12, closed: 7 } },
-    { id: 'AM', name: 'Aspen Meadows',    builder: 'Mesa Verde Homes',     city: 'Las Vegas, NV',   lots: 28, status: { available: 4,  reserved: 3,  sold: 9,  production: 8,  closed: 4 } },
+<template id="page">
+  <div class="page-head">
+    <div class="page-head-row">
+      <div>
+        <div class="eyebrow">Module 3 · Single source of truth</div>
+        <h1 class="page-title">Pricing & Catalog</h1>
+        <p class="page-sub">Every product, price, supplier, and what's available to whom. Cost and markup cascade everywhere an item is used. Builder Programs control which products appear for each neighborhood and series.</p>
+      </div>
+      <div class="flex gap-10">
+        <button class="btn"><span data-ic="sliders"></span>Markup vs. margin</button>
+        <button class="btn primary"><span data-ic="plus"></span>Add product</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="seg mb-16" id="tabs">
+    <button class="active" data-tab="catalog">Price book</button>
+    <button data-tab="programs">Builder Programs</button>
+    <button data-tab="suppliers">Suppliers & Installers</button>
+  </div>
+
+  <!-- PRICE BOOK -->
+  <div data-panel="catalog">
+    <div class="filterbar">
+      <span class="fchip active"><span data-ic="grid"></span>All categories</span>
+      <span class="fchip">Hardwood</span><span class="fchip">Tile</span><span class="fchip">Carpet</span>
+      <span class="fchip">Cabinets</span><span class="fchip">Countertops</span>
+      <span style="flex:1"></span>
+      <span class="muted fs-12">Showing 12 of 312 SKUs</span>
+    </div>
+    <div class="card">
+      <div class="card-body flush">
+        <div class="tbl-wrap"><table class="tbl tbl-clickable">
+          <thead><tr><th>Product</th><th>Category</th><th>Supplier</th><th class="right">Cost</th><th class="right">Allowance</th><th class="right">Sell</th><th class="right">Markup</th><th>Unit</th></tr></thead>
+          <tbody id="cat"></tbody>
+        </table></div>
+      </div>
+    </div>
+    <div class="notice info mt-16"><span data-ic="info"></span><div>Changing a cost or markup here cascades to every open selection, quote, and PO that uses the item. Bulk updates by category or supplier are supported. <span class="prov conf">confirmed</span></div></div>
+  </div>
+
+  <!-- BUILDER PROGRAMS -->
+  <div data-panel="programs" style="display:none">
+    <div class="notice accent mb-16"><span data-ic="info"></span><div><b>Builder Programs</b> are an availability matrix — they define which catalog items and program prices are offered by neighborhood and series, and carry the cutoff rules that filter what a buyer sees in Design Studio. <span class="prov boss">BOSS</span></div></div>
+    <div class="card">
+      <div class="card-head"><div class="card-title"><span data-ic="catalog"></span>Availability matrix — Sunridge Standard Program</div><span class="badge ok"><span class="d"></span>Active</span></div>
+      <div class="card-body flush">
+        <div class="tbl-wrap"><table class="tbl">
+          <thead><tr><th>Product</th><th class="right">Sienna Pass<br><span class="muted" style="font-weight:400">Acacia / Sabino</span></th><th class="right">Desert Vista<br><span class="muted" style="font-weight:400">Mesquite</span></th><th class="right">Program price</th></tr></thead>
+          <tbody id="prog"></tbody>
+        </table></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUPPLIERS -->
+  <div data-panel="suppliers" style="display:none">
+    <div class="grid grid-2">
+      <div class="card">
+        <div class="card-head"><div class="card-title"><span data-ic="box"></span>Suppliers</div></div>
+        <div class="card-body flush"><div class="tbl-wrap"><table class="tbl tbl-clickable">
+          <thead><tr><th>Supplier</th><th>Terms</th><th>Insurance</th></tr></thead><tbody id="sup"></tbody>
+        </table></div></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div class="card-title"><span data-ic="users"></span>Installers / subcontractors</div></div>
+        <div class="card-body flush"><div class="tbl-wrap"><table class="tbl tbl-clickable">
+          <thead><tr><th>Crew</th><th>Categories</th><th class="right">Callback rate</th></tr></thead><tbody id="inst"></tbody>
+        </table></div></div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script src="assets/data/demo.js"></script>
+<script src="assets/js/app.js"></script>
+<script>
+  const S = window.Soltessa;
+  S.mount({ active: 'catalog' });
+  const money = n => '$' + n.toLocaleString(undefined,{minimumFractionDigits:n%1?2:0,maximumFractionDigits:2});
+
+  // price book
+  document.getElementById('cat').innerHTML = DEMO.catalog.map(c => {
+    const markup = Math.round(((c.sell - c.cost)/c.cost)*100);
+    return `<tr>
+      <td><div class="cell-lead"><span class="swatch swatch-sm" style="background:${c.color}"></span>
+        <div><span class="primary">${c.name}</span><div class="muted t-mono">${c.sku}</div></div></div></td>
+      <td><span class="tag">${c.cat}</span></td><td class="muted">${c.supplier}</td>
+      <td class="num tnum">${money(c.cost)}</td><td class="num tnum muted">${money(c.allow)}</td>
+      <td class="num tnum primary">${money(c.sell)}</td>
+      <td class="num tnum" style="color:var(--accent-d)">+${markup}%</td>
+      <td class="muted">${c.unit}</td></tr>`;
+  }).join('');
+
+  // programs availability
+  const prog = [
+    ['White Oak — Wirebrushed','✓','✓','$7.95 / sq ft'],
+    ['Carrara Look Porcelain','✓','✓','$5.40 / sq ft'],
+    ['Quartz — Calacatta Gold','✓','—','$64 / sq ft'],
+    ['Shaker Maple — White','✓','✓','$215 / lin ft'],
+    ['Granite — Ubatuba','—','✓','$49 / sq ft'],
+    ['Mohave Plush Carpet','✓','✓','$29.50 / sq yd'],
   ];
+  const mark = v => v==='✓' ? '<span class="badge ok"><span class="d"></span>Offered</span>' : '<span class="badge neutral">Not offered</span>';
+  document.getElementById('prog').innerHTML = prog.map(p=>`
+    <tr><td class="primary">${p[0]}</td><td class="right">${mark(p[1])}</td><td class="right">${mark(p[2])}</td><td class="num tnum primary">${p[3]}</td></tr>`).join('');
 
-  const plans = [
-    { id: 'P-2210', name: 'Acacia 2210', sqft: 2210, beds: 3, baths: 2.5, community: 'Sienna Pass',
-      allowances: { Flooring: 14200, Cabinets: 9800, Countertops: 6400 },
-      rooms: [
-        { name: 'Great Room',     sqft: 384, cat: 'Hardwood' },
-        { name: 'Kitchen',        sqft: 268, cat: 'Tile' },
-        { name: 'Primary Bed',    sqft: 246, cat: 'Carpet' },
-        { name: 'Primary Bath',   sqft: 132, cat: 'Tile' },
-        { name: 'Bed 2',          sqft: 154, cat: 'Carpet' },
-        { name: 'Bed 3',          sqft: 148, cat: 'Carpet' },
-        { name: 'Entry / Hall',   sqft: 96,  cat: 'Tile' },
-        { name: 'Laundry',        sqft: 64,  cat: 'Tile' },
-      ] },
-    { id: 'P-2640', name: 'Sabino 2640', sqft: 2640, beds: 4, baths: 3, community: 'Sienna Pass', allowances: { Flooring: 16800, Cabinets: 11400, Countertops: 7600 }, rooms: [] },
-    { id: 'P-1980', name: 'Ocotillo 1980', sqft: 1980, beds: 3, baths: 2, community: 'Cholla Ridge', allowances: { Flooring: 12600, Cabinets: 8800, Countertops: 5800 }, rooms: [] },
-    { id: 'P-3120', name: 'Mesquite 3120', sqft: 3120, beds: 4, baths: 3.5, community: 'Desert Vista', allowances: { Flooring: 19400, Cabinets: 13800, Countertops: 9200 }, rooms: [] },
+  // suppliers
+  const sup = [
+    ['Daltile','Net 30','<span class="badge ok"><span class="d"></span>Valid → 2027'],
+    ['Mohawk','Net 45','<span class="badge ok"><span class="d"></span>Valid → 2026'],
+    ['Shaw','Net 30','<span class="badge ok"><span class="d"></span>Valid → 2027'],
+    ['Cambria','Net 30','<span class="badge ok"><span class="d"></span>Valid → 2026'],
+    ['KraftMaid','Net 60','<span class="badge ok"><span class="d"></span>Valid → 2027'],
+    ['MSI','Net 30','<span class="badge warn"><span class="d"></span>Renews 30 days'],
   ];
+  document.getElementById('sup').innerHTML = sup.map(s=>`<tr><td class="primary">${s[0]}</td><td class="muted">${s[1]}</td><td>${s[2]}</span></td></tr>`).join('');
 
-  // catalog items
-  const catalog = [
-    { sku: 'HW-OAK-WW',  name: 'White Oak — Wirebrushed',      cat: 'Hardwood',    supplier: 'Mohawk',        unit: 'sq ft',  cost: 4.85, allow: 6.20, sell: 7.95, color: '#c9a878' },
-    { sku: 'HW-HIK-NAT', name: 'Hickory — Natural Matte',      cat: 'Hardwood',    supplier: 'Shaw',          unit: 'sq ft',  cost: 5.40, allow: 6.20, sell: 8.60, color: '#b98a5e' },
-    { sku: 'LVP-COAST',  name: 'Coastal Luxury Vinyl Plank',   cat: 'LVP',         supplier: 'COREtec',       unit: 'sq ft',  cost: 2.95, allow: 3.80, sell: 4.95, color: '#a8916f' },
-    { sku: 'TIL-CARR12', name: 'Carrara Look 12×24 Porcelain', cat: 'Tile',        supplier: 'Daltile',       unit: 'sq ft',  cost: 3.10, allow: 4.10, sell: 5.40, color: '#e6e4df' },
-    { sku: 'TIL-SLATE',  name: 'Slate Grey 18×18 Porcelain',   cat: 'Tile',        supplier: 'Daltile',       unit: 'sq ft',  cost: 2.70, allow: 4.10, sell: 4.85, color: '#6f7479' },
-    { sku: 'CPT-PLUSH',  name: 'Mohave Plush — Greige',        cat: 'Carpet',      supplier: 'Shaw',          unit: 'sq yd',  cost: 18.40, allow: 24.00, sell: 29.50, color: '#bcb3a4' },
-    { sku: 'CPT-BERBER', name: 'Canyon Berber — Sandstone',    cat: 'Carpet',      supplier: 'Mohawk',        unit: 'sq yd',  cost: 15.90, allow: 24.00, sell: 26.80, color: '#cdbfa6' },
-    { sku: 'CAB-SHAK-W', name: 'Shaker Maple — White',         cat: 'Cabinets',    supplier: 'KraftMaid',     unit: 'lin ft', cost: 142.00, allow: 175.00, sell: 215.00, color: '#efeae1' },
-    { sku: 'CAB-SHAK-E', name: 'Shaker Maple — Espresso',      cat: 'Cabinets',    supplier: 'KraftMaid',     unit: 'lin ft', cost: 148.00, allow: 175.00, sell: 224.00, color: '#5a4636' },
-    { sku: 'CTR-QTZ-CG', name: 'Quartz — Calacatta Gold',      cat: 'Countertops', supplier: 'Cambria',       unit: 'sq ft',  cost: 38.00, allow: 52.00, sell: 64.00, color: '#ede9e0' },
-    { sku: 'CTR-QTZ-PW', name: 'Quartz — Pure White',          cat: 'Countertops', supplier: 'Caesarstone',   unit: 'sq ft',  cost: 34.00, allow: 52.00, sell: 58.00, color: '#f4f3ef' },
-    { sku: 'CTR-GRN-UB', name: 'Granite — Ubatuba',            cat: 'Countertops', supplier: 'MSI',           unit: 'sq ft',  cost: 29.00, allow: 52.00, sell: 49.00, color: '#2f3330' },
+  const inst = [
+    ['Premier Floors','Hardwood · Carpet · LVP','2.1%'],
+    ['TileRight','Tile · Backsplash','1.4%'],
+    ['Vegas Cabinet Co','Cabinets','3.8%'],
+    ['StoneWorks','Countertops','0.9%'],
   ];
+  document.getElementById('inst').innerHTML = inst.map(i=>{
+    const r=parseFloat(i[2]); const cls=r>3?'danger':r>2?'warn':'ok';
+    return `<tr><td class="primary">${i[0]}</td><td class="muted">${i[1]}</td><td class="right"><span class="badge ${cls}"><span class="d"></span>${i[2]}</span></td></tr>`;
+  }).join('');
 
-  const colorVariants = {
-    'CTR-QTZ-CG': ['Calacatta Gold', 'Calacatta Nuvo', 'Brittanicca'],
-    'CAB-SHAK-W': ['Pure White', 'Dover White', 'Linen'],
-    'HW-OAK-WW': ['Natural', 'Smoked', 'Driftwood'],
-  };
-
-  return { communities, plans, catalog, colorVariants };
-})();
+  // tabs
+  document.querySelectorAll('#tabs button').forEach(b=>b.addEventListener('click',()=>{
+    document.querySelectorAll('#tabs button').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    const t=b.dataset.tab;
+    document.querySelectorAll('[data-panel]').forEach(p=>p.style.display=p.dataset.panel===t?'':'none');
+  }));
+</script>
+</body>
+</html>

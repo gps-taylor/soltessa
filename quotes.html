@@ -3,243 +3,119 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Design Studio · Soltessa</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<title>Selections & Quotes · Soltessa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/css/app.css">
 </head>
 <body>
-<div id="app" data-page="studio"></div>
+<div id="app" data-page="quotes"></div>
 <div class="drawer-scrim" id="scrim"></div>
-
-<!-- Flooring calculator drawer -->
-<div class="drawer" id="calcDrawer">
-  <div class="drawer-head">
-    <div>
-      <div class="eyebrow" style="margin:0">Flooring calculator <span class="prov boss">BOSS</span></div>
-      <h3 class="t-display" style="font-size:20px;margin-top:4px">Great Room — White Oak</h3>
-    </div>
-    <button class="top-action btn-icon" data-drawer-close aria-label="Close" data-ic="x"></button>
-  </div>
-  <div class="drawer-body" id="calcBody"></div>
-</div>
 
 <template id="page">
   <div class="page-head">
     <div class="page-head-row">
       <div>
-        <div class="eyebrow">Module 2 · The core</div>
-        <h1 class="page-title">Design Studio</h1>
-        <p class="page-sub">Sit with a buyer and build the finish package room by room, priced live against the builder allowance. Quantities auto-fill from plan dimensions in the right unit for each category.</p>
+        <div class="eyebrow">Module 4 · The transactional pipeline</div>
+        <h1 class="page-title">Selections & Quotes</h1>
+        <p class="page-sub">Turn a design session into an approved, priced commitment through accountable stages — including the price-request step that legacy tools handle implicitly.</p>
       </div>
-      <div class="flex gap-10">
-        <button class="btn"><span data-ic="layers"></span>What-if scenarios</button>
-        <button class="btn primary"><span data-ic="plus"></span>New session</button>
-      </div>
+      <button class="btn primary"><span data-ic="plus"></span>New price request</button>
     </div>
   </div>
 
-  <!-- session context bar -->
-  <div class="card mb-16">
-    <div class="card-body" style="padding:14px 18px">
-      <div class="flex items-center between wrap gap-16">
-        <div class="flex items-center gap-16 wrap">
-          <div>
-            <div class="muted fs-12">Buyer</div>
-            <div class="fw-600">Raj & Priya Patel</div>
-          </div>
-          <div style="width:1px;height:30px;background:var(--line)"></div>
-          <div>
-            <div class="muted fs-12">Lot</div>
-            <div class="fw-600">Lot 14 · Sienna Pass</div>
-          </div>
-          <div style="width:1px;height:30px;background:var(--line)"></div>
-          <div>
-            <div class="muted fs-12">Plan</div>
-            <div class="fw-600">Acacia 2210 · 3 bd / 2.5 ba</div>
-          </div>
-          <div style="width:1px;height:30px;background:var(--line)"></div>
-          <div>
-            <div class="muted fs-12">Stage</div>
-            <div class="fw-600"><span class="badge accent"><span class="d"></span>Selections open</span></div>
-          </div>
-        </div>
-        <div class="seg">
-          <button class="active">Products</button>
-          <button>Colors</button>
-          <button>Takeoffs</button>
-        </div>
+  <!-- workflow stepper -->
+  <div class="card mb-16"><div class="card-body" style="padding:16px 20px">
+    <div class="stepper">
+      <div class="step done"><span class="step-num"><span data-ic="check"></span></span><span class="step-label">Selection</span></div>
+      <div class="step-line done"></div>
+      <div class="step done"><span class="step-num"><span data-ic="check"></span></span><span class="step-label">Price Request</span></div>
+      <div class="step-line done"></div>
+      <div class="step current"><span class="step-num">3</span><span class="step-label">Quote</span></div>
+      <div class="step-line"></div>
+      <div class="step"><span class="step-num">4</span><span class="step-label">Buyer Contract</span></div>
+      <div class="step-line"></div>
+      <div class="step"><span class="step-num">5</span><span class="step-label">Purchasing</span></div>
+    </div>
+  </div></div>
+
+  <div class="grid grid-2 mb-16">
+    <!-- Price requests -->
+    <div class="card">
+      <div class="card-head">
+        <div><div class="card-title"><span data-ic="tag"></span>Price Requests <span class="prov boss">BOSS</span></div><div class="card-sub">Raised to vendors when a selection needs current or custom pricing</div></div>
+        <span class="badge warn"><span class="d"></span>2 open</span>
       </div>
+      <div class="card-body flush"><div class="tbl-wrap"><table class="tbl tbl-clickable">
+        <thead><tr><th>Request</th><th>Vendor</th><th class="right">Status</th><th class="right">Turnaround</th></tr></thead>
+        <tbody id="pr"></tbody>
+      </table></div></div>
+    </div>
+
+    <!-- Quotes -->
+    <div class="card">
+      <div class="card-head">
+        <div><div class="card-title"><span data-ic="quotes"></span>Quotes <span class="prov boss">BOSS</span></div><div class="card-sub">Formal priced quotes issued for builder/buyer approval</div></div>
+        <span class="badge info"><span class="d"></span>$182k in flight</span>
+      </div>
+      <div class="card-body flush"><div class="tbl-wrap"><table class="tbl tbl-clickable">
+        <thead><tr><th>Quote</th><th>Lot</th><th class="right">Amount</th><th class="right">Status</th></tr></thead>
+        <tbody id="qt"></tbody>
+      </table></div></div>
     </div>
   </div>
 
-  <!-- cutoff notice -->
-  <div class="notice warn mb-16">
-    <span data-ic="alert"></span>
-    <div><b>Cabinet selections close in 6 days.</b> Construction stage on this lot reaches <b>cabinet rough-in</b> on July 5 — cabinet and countertop lines lock at that point. Flooring and tile remain open through drywall. <span class="prov conf" style="margin-left:6px">confirmed</span></div>
-  </div>
-
-  <div class="studio">
-    <!-- LEFT: room-by-room selection -->
-    <div>
-      <div id="rooms"></div>
-    </div>
-
-    <!-- RIGHT: live allowance panel -->
-    <div class="stack gap-16" style="position:sticky;top:78px">
-      <div class="card">
-        <div class="card-head"><div class="card-title"><span data-ic="dollar"></span>Allowance, live</div></div>
-        <div class="card-body">
-          <div id="allowLive"></div>
-          <div class="doc-rule"></div>
-          <div class="flex items-center between">
-            <span class="fw-600">Total over allowance</span>
-            <span class="t-display fw-700" style="font-size:20px;color:var(--danger)">+$1,040</span>
-          </div>
-          <p class="muted fs-12" style="margin:8px 0 0">Buyer pays the net difference. Standard finishes are credited automatically.</p>
-        </div>
+  <!-- Buyer selections register -->
+  <div class="card">
+    <div class="card-head">
+      <div class="card-title"><span data-ic="list"></span>Buyer Selections register</div>
+      <div class="tbl-tools">
+        <span class="fchip active"><span data-ic="filter"></span>All stages</span>
+        <span class="fchip">Sienna Pass</span>
+        <span class="fchip">Desert Vista</span>
       </div>
-
-      <div class="card">
-        <div class="card-head"><div class="card-title"><span data-ic="layers"></span>What-if scenarios <span class="prov conf">confirmed</span></div></div>
-        <div class="card-body flush">
-          <div id="scenarios"></div>
-        </div>
-      </div>
-
-      <button class="btn primary" style="width:100%;padding:11px"><span data-ic="check"></span>Finalize selections → Price Request</button>
     </div>
+    <div class="card-body flush"><div class="tbl-wrap"><table class="tbl tbl-clickable">
+      <thead><tr><th>Buyer</th><th>Lot / Community</th><th>Plan</th><th>Designer</th><th>Stage</th><th class="right">Over allowance</th></tr></thead>
+      <tbody id="reg"></tbody>
+    </table></div></div>
   </div>
 </template>
 
 <script src="assets/data/demo.js"></script>
 <script src="assets/js/app.js"></script>
 <script>
-  const S = window.Soltessa;
-  S.mount({ active: 'studio' });
+  const S=window.Soltessa; S.mount({active:'quotes'});
 
-  // ---- rooms (room-by-room, per-category unit) ----
-  // each room: products with auto-filled qty in correct UoM
-  const rooms = [
-    { name: 'Great Room', sqft: 384, locked: false, items: [
-      { sel: 'White Oak — Wirebrushed', cat: 'Hardwood', unit: 'sq ft', qty: 422, price: 7.95, allowPrice: 6.20, std: 'Builder LVP', calc: true },
-    ]},
-    { name: 'Kitchen', sqft: 268, locked: false, items: [
-      { sel: 'Carrara Look 12×24 Porcelain', cat: 'Tile', unit: 'sq ft', qty: 295, price: 5.40, allowPrice: 4.10, std: 'Builder tile', calc: true },
-      { sel: 'Shaker Maple — White', cat: 'Cabinets', unit: 'lin ft', qty: 38, price: 215, allowPrice: 175, std: 'Oak builder', locked: true },
-      { sel: 'Quartz — Calacatta Gold', cat: 'Countertops', unit: 'sq ft', qty: 64, price: 64, allowPrice: 52, std: 'Laminate', locked: true },
-    ]},
-    { name: 'Primary Bedroom', sqft: 246, locked: false, items: [
-      { sel: 'Mohave Plush — Greige', cat: 'Carpet', unit: 'sq yd', qty: 30, price: 29.50, allowPrice: 24.00, std: 'Builder carpet', calc: true },
-    ]},
-    { name: 'Primary Bath', sqft: 132, locked: false, items: [
-      { sel: 'Slate Grey 18×18 Porcelain', cat: 'Tile', unit: 'sq ft', qty: 146, price: 4.85, allowPrice: 4.10, std: 'Builder tile', calc: true },
-    ]},
-    { name: 'Bedrooms 2 & 3', sqft: 302, locked: false, items: [
-      { sel: 'Canyon Berber — Sandstone', cat: 'Carpet', unit: 'sq yd', qty: 37, price: 26.80, allowPrice: 24.00, std: 'Builder carpet', calc: true },
-    ]},
+  const pr=[
+    ['PR-228 · Calacatta Gold quartz','Cambria','<span class="badge warn"><span class="d"></span>Awaiting','—'],
+    ['PR-231 · Custom stair-nose','Mohawk','<span class="badge warn"><span class="d"></span>Awaiting','—'],
+    ['PR-225 · Slate porcelain bath','Daltile','<span class="badge ok"><span class="d"></span>Answered','1.1 days'],
+    ['PR-219 · Espresso cabinet upgrade','KraftMaid','<span class="badge ok"><span class="d"></span>Answered','1.8 days'],
+    ['PR-212 · Granite Ubatuba','MSI','<span class="badge neutral">Expired','—'],
   ];
+  document.getElementById('pr').innerHTML=pr.map(r=>`<tr><td class="primary">${r[0]}</td><td class="muted">${r[1]}</td><td class="right">${r[2]}</span></td><td class="num right muted">${r[3]}</td></tr>`).join('');
 
-  const money = n => '$' + n.toLocaleString(undefined, { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 });
+  const qt=[
+    ['Q-1043','Lot 09 · Cholla Ridge','$48,200','<span class="badge ok"><span class="d"></span>Approved'],
+    ['Q-1041','Lot 22 · Desert Vista','$61,750','<span class="badge info"><span class="d"></span>Pending'],
+    ['Q-1039','Lot 14 · Sienna Pass','$39,480','<span class="badge info"><span class="d"></span>Pending'],
+    ['Q-1037','Lot 05 · Aspen Meadows','$32,900','<span class="badge accent"><span class="d"></span>Draft'],
+  ];
+  document.getElementById('qt').innerHTML=qt.map(r=>`<tr><td class="primary t-mono">${r[0]}</td><td class="muted">${r[1]}</td><td class="num tnum primary">${r[2]}</td><td class="right">${r[3]}</span></td></tr>`).join('');
 
-  document.getElementById('rooms').innerHTML = rooms.map(room => {
-    const rows = room.items.map(it => {
-      const ext = it.qty * it.price;
-      const net = it.qty * (it.price - it.allowPrice);
-      const over = net > 0;
-      const lockBadge = it.locked ? '<span class="badge danger" style="margin-left:7px"><span class="d"></span>locks Jul 5</span>' : '';
-      const calcBtn = it.calc ? `<button class="btn sm ghost" data-drawer="calcDrawer" title="Open flooring calculator"><span data-ic="calc"></span></button>` : '';
-      return `<tr>
-        <td>
-          <div class="cell-lead">
-            <span class="swatch swatch-sm" style="background:${swatchFor(it.cat)}"></span>
-            <div><span class="primary">${it.sel}</span><div class="muted">${it.cat} · net over std: <b style="color:${over?'var(--danger)':'var(--ok)'}">${over?'+':''}${money(net)}</b></div></div>
-          </div>
-        </td>
-        <td class="num tnum">${it.qty.toLocaleString()}<div class="muted" style="font-weight:400">${it.unit}</div></td>
-        <td class="num tnum">${money(it.price)}</td>
-        <td class="num tnum primary">${money(ext)}</td>
-        <td class="right" style="white-space:nowrap">${calcBtn}</td>
-      </tr>`;
-    }).join('');
-    return `<div class="room-group">
-      <div class="room-head">
-        <div class="rn"><span data-ic="home"></span>${room.name}</div>
-        <div class="rd">${room.sqft} sq ft floor area</div>
-      </div>
-      <div class="tbl-wrap"><table class="tbl">
-        <thead><tr><th>Selection</th><th class="right">Qty</th><th class="right">Unit price</th><th class="right">Extended</th><th></th></tr></thead>
-        <tbody>${rows}</tbody>
-      </table></div>
-    </div>`;
+  const reg=[
+    ['Raj & Priya Patel','Lot 14 · Sienna Pass','Acacia 2210','T. Morgan','<span class="badge info"><span class="d"></span>Quote','+$1,040'],
+    ['The Nguyen family','Lot 09 · Cholla Ridge','Ocotillo 1980','D. Reyes','<span class="badge ok"><span class="d"></span>Contract','+$2,310'],
+    ['Marcus Webb','Lot 22 · Desert Vista','Mesquite 3120','T. Morgan','<span class="badge warn"><span class="d"></span>Price Request','+$4,120'],
+    ['Sofia & Aaron Klein','Lot 31 · Desert Vista','Mesquite 3120','D. Reyes','<span class="badge accent"><span class="d"></span>Selection','+$680'],
+    ['The Patterson family','Lot 05 · Aspen Meadows','Acacia 2210','T. Morgan','<span class="badge accent"><span class="d"></span>Selection','+$240'],
+    ['Elena Vasquez','Lot 17 · Sienna Pass','Sabino 2640','D. Reyes','<span class="badge neutral">PO issued','+$3,890'],
+  ];
+  document.getElementById('reg').innerHTML=reg.map(r=>{
+    const over=r[5]!=='$0';
+    return `<tr><td class="primary">${r[0]}</td><td class="muted">${r[1]}</td><td>${r[2]}</td><td class="muted">${r[3]}</td><td>${r[4]}</span></td><td class="num tnum right" style="color:${over?'var(--danger)':'var(--ink-3)'}">${r[5]}</td></tr>`;
   }).join('');
-
-  function swatchFor(cat) {
-    const m = { Hardwood:'#c9a878', Tile:'#e6e4df', Carpet:'#bcb3a4', Cabinets:'#efeae1', Countertops:'#ede9e0', LVP:'#a8916f' };
-    return m[cat] || '#ddd';
-  }
-
-  // ---- live allowance ----
-  const live = [
-    { cat: 'Flooring', used: 15240, cap: 14200 },
-    { cat: 'Cabinets', used: 8170, cap: 9800 },
-    { cat: 'Countertops', used: 4096, cap: 6400 },
-  ];
-  document.getElementById('allowLive').innerHTML = live.map(a => {
-    const pct = Math.min(100, (a.used / a.cap) * 100);
-    const over = a.used > a.cap, warn = !over && pct > 88;
-    const cls = over ? 'over' : (warn ? 'warn' : '');
-    const delta = a.used - a.cap;
-    return `<div style="margin-bottom:14px">
-      <div class="allow-row"><span class="cat">${a.cat}</span>
-        <span class="delta ${over?'over':'under'}">${over?'+':''}${money(delta)}</span></div>
-      <div class="allow-track"><div class="allow-fill ${cls}" style="width:${pct}%"></div></div>
-      <div class="muted fs-12 tnum" style="margin-top:4px">${money(a.used)} / ${money(a.cap)}</div>
-    </div>`;
-  }).join('');
-
-  // ---- scenarios ----
-  const scen = [
-    { name: 'Upgraded kitchen', total: '+$1,040', active: true },
-    { name: 'Builder-grade baseline', total: '$0', active: false },
-    { name: 'Full premium package', total: '+$4,820', active: false },
-  ];
-  document.getElementById('scenarios').innerHTML = scen.map((s,i) => `
-    <div class="flex items-center between" style="padding:12px 16px;border-bottom:${i<scen.length-1?'1px solid var(--line)':'none'};${s.active?'background:var(--accent-bg)':''}">
-      <div class="flex items-center gap-10">
-        <span style="width:16px;height:16px;border-radius:50%;border:2px solid ${s.active?'var(--accent)':'var(--line-2)'};display:grid;place-items:center">
-          ${s.active?'<span style="width:7px;height:7px;border-radius:50%;background:var(--accent)"></span>':''}
-        </span>
-        <span class="fw-600 fs-13">${s.name}</span>
-      </div>
-      <span class="t-mono fs-12 ${s.total.startsWith('+')?'':''}" style="color:${s.total.startsWith('+')?'var(--danger)':'var(--ink-3)'}">${s.total}</span>
-    </div>`).join('');
-
-  // ---- flooring calculator drawer body ----
-  document.getElementById('calcBody').innerHTML = `
-    <p class="muted fs-13" style="margin-top:0">Converts room dimensions into material quantity in the correct unit, with waste, plank direction, and transitions — not a naïve area × price. <span class="prov conf">confirmed in BOSS</span></p>
-    <div class="card" style="margin:14px 0"><div class="card-body">
-      <div class="meta">
-        <dt>Room</dt><dd>Great Room</dd>
-        <dt>Floor area</dt><dd class="t-mono">384 sq ft</dd>
-        <dt>Product</dt><dd>White Oak — Wirebrushed</dd>
-        <dt>Unit of measure</dt><dd><span class="badge accent"><span class="d"></span>sq ft</span></dd>
-      </div>
-    </div></div>
-    <div class="divider"><span class="lbl">Calculation</span><span class="line"></span></div>
-    <table class="tbl"><tbody>
-      <tr><td>Net floor area</td><td class="num tnum">384.0 sq ft</td></tr>
-      <tr><td>Waste factor — diagonal layout</td><td class="num tnum">+10%</td></tr>
-      <tr><td>Plank direction — run long axis</td><td class="num tnum">included</td></tr>
-      <tr><td>Transitions / thresholds (3)</td><td class="num tnum">+2.4 sq ft</td></tr>
-      <tr style="background:var(--accent-bg)"><td class="primary">Order quantity</td><td class="num tnum primary">422.4 sq ft</td></tr>
-    </tbody></table>
-    <div class="notice info" style="margin-top:16px"><span data-ic="info"></span><div>Carpet would compute in <b>sq yd</b>; cabinets in <b>lineal feet</b>. The calculator respects each category's unit so takeoffs and POs stay trustworthy.</div></div>
-    <button class="btn primary mt-16" style="width:100%"><span data-ic="check"></span>Apply 422.4 sq ft to line item</button>
-  `;
-  S.resolveIcons(document.getElementById('calcBody'));
-  S.resolveIcons(document.getElementById('calcDrawer'));
 </script>
 </body>
 </html>
