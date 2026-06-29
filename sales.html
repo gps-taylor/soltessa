@@ -24,6 +24,8 @@
     </div>
   </div>
 
+  <div data-scopebar="scoped"></div>
+
   <div class="kpi-grid mb-16" id="kpis"></div>
 
   <div class="grid grid-2-1 mb-16">
@@ -56,40 +58,42 @@
 <script src="assets/js/app.js"></script>
 <script>
   const S=window.Soltessa; S.mount({active:'sales'});
+  const SC=S.scope(); const commName = SC.isAll ? null : SC.dev.name;
+  const bData = DEMO.byComm(DEMO.buyers, commName);
+  const escrow = bData.filter(b=>b.status==='escrow').length;
+  const deposits = bData.reduce((a,b)=>a+b.deposit,0);
   const kpis=[
-    {label:'Active buyers',icon:'sales',value:'42',delta:'+5 this month',d:'up',s:[34,36,37,39,40,41,42]},
-    {label:'In escrow',icon:'clock',value:'19',delta:'3 closing < 14 days',d:'flat',s:[15,17,16,18,19,19,19]},
-    {label:'Option deposits held',icon:'dollar',value:'$214k',delta:'across 42 buyers',d:'up',s:[180,188,195,201,208,210,214]},
-    {label:'Overdue milestones',icon:'alert',value:'2',delta:'need follow-up',d:'down',s:[5,4,4,3,2,2,2]},
+    {label:'Active buyers',icon:'sales',value:String(bData.length),delta: SC.isAll?'+5 this month':'in this community',d:'up',s:[34,36,37,39,40,41,42]},
+    {label:'In escrow',icon:'clock',value:String(escrow),delta: escrow?'closing soon':'none open',d:'flat',s:[15,17,16,18,19,19,19]},
+    {label:'Option deposits held',icon:'dollar',value:'$'+(deposits/1000).toFixed(0)+'k',delta:`across ${bData.length} buyers`,d:'up',s:[180,188,195,201,208,210,214]},
+    {label:'Overdue milestones',icon:'alert',value: SC.isAll?'2':'1',delta:'need follow-up',d:'down',s:[5,4,4,3,2,2,2]},
   ];
   document.getElementById('kpis').innerHTML=kpis.map(k=>`<div class="kpi"><div class="kpi-label">${S.icon(k.icon)} ${k.label}</div><div class="kpi-value">${k.value}</div><div class="kpi-delta ${k.d}">${k.delta}</div>${S.spark(k.s)}</div>`).join('');
 
-  const buyers=[
-    ['Raj & Priya Patel','Lot 14 · Acacia 2210','$2,500','+$1,040','<span class="badge accent"><span class="d"></span>In production'],
-    ['The Nguyen family','Lot 09 · Ocotillo 1980','$2,000','+$2,310','<span class="badge info"><span class="d"></span>In escrow'],
-    ['Marcus Webb','Lot 22 · Mesquite 3120','$3,500','+$4,120','<span class="badge info"><span class="d"></span>In escrow'],
-    ['Elena Vasquez','Lot 17 · Sabino 2640','$3,000','+$3,890','<span class="badge accent"><span class="d"></span>In production'],
-    ['Sofia & Aaron Klein','Lot 31 · Mesquite 3120','$3,500','+$680','<span class="badge warn"><span class="d"></span>Contingency'],
-    ['The Cortez family','Lot 02 · Acacia 2210','$2,500','+$1,420','<span class="badge ok"><span class="d"></span>Closed'],
-  ];
-  document.getElementById('buyers').innerHTML=buyers.map(b=>`<tr><td class="primary">${b[0]}</td><td class="muted">${b[1]}</td><td class="num tnum">${b[2]}</td><td class="num tnum" style="color:var(--danger)">${b[3]}</td><td>${b[4]}</span></td></tr>`).join('');
+  const stBadge = st => ({production:'<span class="badge accent"><span class="d"></span>In production',escrow:'<span class="badge info"><span class="d"></span>In escrow',contingency:'<span class="badge warn"><span class="d"></span>Contingency',closed:'<span class="badge ok"><span class="d"></span>Closed',selection:'<span class="badge accent"><span class="d"></span>Selection'}[st]||'<span class="badge accent"><span class="d"></span>In production');
+  const buyers = bData.map(b => [b.name, `${b.lot} · ${b.plan}`, '$'+b.deposit.toLocaleString(), b.over?('+$'+b.over.toLocaleString()):'$0', stBadge(b.status)]);
+  document.getElementById('buyers').innerHTML = buyers.length ? buyers.map(b=>`<tr><td class="primary">${b[0]}</td><td class="muted">${b[1]}</td><td class="num tnum">${b[2]}</td><td class="num tnum" style="color:${b[3]==='$0'?'var(--ink-3)':'var(--danger)'}">${b[3]}</td><td>${b[4]}</span></td></tr>`).join('') : `<tr><td colspan="5" class="muted" style="text-align:center;padding:24px">No buyers in this development.</td></tr>`;
 
-  const ms=[
-    ['Patel — loan contingency','Jul 8','danger','3 days'],
-    ['Webb — appraisal due','Jul 14','warn','9 days'],
-    ['Nguyen — close of escrow','Jul 22','info','17 days'],
-    ['Klein — inspection contingency','Jul 30','info','25 days'],
+  const msAll=[
+    ['Patel — loan contingency','Jul 8','danger','3 days','Sienna Pass'],
+    ['Webb — appraisal due','Jul 14','warn','9 days','Desert Vista'],
+    ['Nguyen — close of escrow','Jul 22','info','17 days','Cholla Ridge'],
+    ['Klein — inspection contingency','Jul 30','info','25 days','Desert Vista'],
+    ['Archer — close of escrow','Aug 4','info','30 days','Aspen Meadows'],
   ];
-  document.getElementById('milestones').innerHTML=ms.map(m=>`
-    <div class="flex items-center between"><div><div class="fw-600 fs-13">${m[0]}</div><div class="muted fs-12">${m[1]}</div></div><span class="badge ${m[2]}"><span class="d"></span>${m[3]}</span></div>`).join('');
+  const ms = commName ? msAll.filter(m=>m[4]===commName) : msAll;
+  document.getElementById('milestones').innerHTML = ms.length ? ms.map(m=>`
+    <div class="flex items-center between"><div><div class="fw-600 fs-13">${m[0]}</div><div class="muted fs-12">${m[1]}</div></div><span class="badge ${m[2]}"><span class="d"></span>${m[3]}</span></div>`).join('') : `<div class="muted fs-13" style="text-align:center;padding:18px">No upcoming milestones in this development.</div>`;
 
-  const docs=[
-    ['Option Selection Agreement','Raj & Priya Patel','Selection','Jun 24','<span class="badge ok"><span class="d"></span>Signed'],
-    ['Purchase Addendum','The Nguyen family','Addendum','Jun 22','<span class="badge ok"><span class="d"></span>Signed'],
-    ['Option Selection Agreement','Marcus Webb','Selection','Jun 27','<span class="badge warn"><span class="d"></span>Out for signature'],
-    ['Change Order Acknowledgment','Raj & Priya Patel','Change order','Jun 28','<span class="badge accent"><span class="d"></span>Draft'],
+  const docsAll=[
+    ['Option Selection Agreement','Raj & Priya Patel','Selection','Jun 24','<span class="badge ok"><span class="d"></span>Signed','Sienna Pass'],
+    ['Purchase Addendum','The Nguyen family','Addendum','Jun 22','<span class="badge ok"><span class="d"></span>Signed','Cholla Ridge'],
+    ['Option Selection Agreement','Marcus Webb','Selection','Jun 27','<span class="badge warn"><span class="d"></span>Out for signature','Desert Vista'],
+    ['Change Order Acknowledgment','Raj & Priya Patel','Change order','Jun 28','<span class="badge accent"><span class="d"></span>Draft','Sienna Pass'],
+    ['Option Selection Agreement','Helen & Roy Archer','Selection','Jun 26','<span class="badge warn"><span class="d"></span>Out for signature','Aspen Meadows'],
   ];
-  document.getElementById('docs').innerHTML=docs.map(d=>`<tr data-didx="${docs.indexOf(d)}"><td class="primary">${d[0]}</td><td class="muted">${d[1]}</td><td><span class="tag">${d[2]}</span></td><td class="num right muted">${d[3]}</td><td class="right">${d[4]}</span></td></tr>`).join('');
+  const docs = commName ? docsAll.filter(d=>d[5]===commName) : docsAll;
+  document.getElementById('docs').innerHTML = docs.length ? docs.map((d,i)=>`<tr data-didx="${i}"><td class="primary">${d[0]}</td><td class="muted">${d[1]}</td><td><span class="tag">${d[2]}</span></td><td class="num right muted">${d[3]}</td><td class="right">${d[4]}</span></td></tr>`).join('') : `<tr><td colspan="5" class="muted" style="text-align:center;padding:24px">No agreements in this development.</td></tr>`;
 
   // ============ INTERACTIVITY ============
   // Add buyer

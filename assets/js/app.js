@@ -64,18 +64,18 @@
   const NAV = [
     { sec: 'Workspace' },
     { id: 'dashboard',  label: 'Dashboard',          icon: 'dashboard',  href: 'index.html' },
-    { id: 'studio',     label: 'Design Studio',       icon: 'studio',     href: 'design-studio.html', badge: '6' },
-    { id: 'catalog',    label: 'Pricing & Catalog',   icon: 'catalog',    href: 'catalog.html' },
-    { id: 'quotes',     label: 'Selections & Quotes', icon: 'quotes',     href: 'quotes.html', badge: '4' },
+    { id: 'studio',     label: 'Design Studio',       icon: 'studio',     href: 'design-studio.html', badge: '6', alt: 'dev' },
+    { id: 'catalog',    label: 'Pricing & Catalog',   icon: 'catalog',    href: 'catalog.html', alt: 'co' },
+    { id: 'quotes',     label: 'Selections & Quotes', icon: 'quotes',     href: 'quotes.html', badge: '4', alt: 'dev' },
     { sec: 'Operations' },
-    { id: 'purchasing', label: 'Purchasing',          icon: 'purchasing', href: 'purchasing.html' },
-    { id: 'lots',       label: 'Lots & Communities',  icon: 'lots',       href: 'lots.html' },
-    { id: 'scheduling', label: 'Scheduling',          icon: 'scheduling', href: 'scheduling.html' },
+    { id: 'purchasing', label: 'Purchasing',          icon: 'purchasing', href: 'purchasing.html', alt: 'dev' },
+    { id: 'lots',       label: 'Lots & Communities',  icon: 'lots',       href: 'lots.html', alt: 'dev' },
+    { id: 'scheduling', label: 'Scheduling',          icon: 'scheduling', href: 'scheduling.html', alt: 'dev' },
     { sec: 'Relationships' },
-    { id: 'sales',      label: 'Sales & Buyers',      icon: 'sales',      href: 'sales.html' },
-    { id: 'service',    label: 'Customer Service',    icon: 'service',    href: 'service.html' },
+    { id: 'sales',      label: 'Sales & Buyers',      icon: 'sales',      href: 'sales.html', alt: 'dev' },
+    { id: 'service',    label: 'Customer Service',    icon: 'service',    href: 'service.html', alt: 'dev' },
     { sec: 'Administration' },
-    { id: 'settings',   label: 'Settings & Admin',    icon: 'settings',   href: 'settings.html' },
+    { id: 'settings',   label: 'Settings & Admin',    icon: 'settings',   href: 'settings.html', alt: 'co' },
   ];
 
   function buildRail(active) {
@@ -83,7 +83,8 @@
       if (n.sec) return `<div class="nav-section-label">${n.sec}</div>`;
       const isActive = n.id === active ? 'active' : '';
       const badge = n.badge ? `<span class="nav-badge">${n.badge}</span>` : '';
-      return `<a class="nav-item ${isActive}" href="${n.href}">${icon(n.icon)}<span>${n.label}</span>${badge}</a>`;
+      const alt = n.alt ? `<span class="nav-alt ${n.alt}" title="${n.alt==='co'?'Company-wide':'Development-scoped'}"></span>` : '';
+      return `<a class="nav-item ${isActive}" href="${n.href}">${icon(n.icon)}<span>${n.label}</span>${alt}${badge}</a>`;
     }).join('');
 
     return `
@@ -163,6 +164,7 @@
     wireDrawers();
     wireActions();
     wireSearch();
+    scopeBanner();
   }
 
   // any element with data-ic="name" gets the svg injected
@@ -180,35 +182,65 @@
 
   // session-only list of developments onboarded during this visit
   const SESSION_DEVS = [];
+  // restore any session-onboarded devs persisted this visit
+  try { const extra = JSON.parse(sessionStorage.getItem('soltessa.newdevs') || '[]'); extra.forEach(d => SESSION_DEVS.push(d)); } catch (e) {}
 
   function allDevs() { return devList().concat(SESSION_DEVS); }
 
-  function setActiveDev(d) {
-    document.getElementById('tChip').textContent = d.short;
-    document.getElementById('tName').textContent = d.name;
-    document.getElementById('tRole').textContent = d.role;
+  // ---- Scope state: 'all' (company-wide) or a development id ----
+  const ALL = { id: 'all', short: 'ALL', name: 'All developments', role: 'Company-wide · 4 communities', accent: '#5a6b8c', isAll: true };
+  function getScopeId() {
+    try { return sessionStorage.getItem('soltessa.scope') || 'all'; } catch (e) { return 'all'; }
+  }
+  function scopeObj() {
+    const id = getScopeId();
+    if (id === 'all') { const a = Object.assign({}, ALL); a.role = 'Company-wide · ' + allDevs().length + ' communities'; return a; }
+    return allDevs().find(d => d.id === id) || (function(){ const a=Object.assign({},ALL); return a; })();
+  }
+  // public API for pages
+  function scope() {
+    const s = scopeObj();
+    return { id: s.id, isAll: !!s.isAll, dev: s.isAll ? null : s, name: s.name, devs: allDevs() };
+  }
+  function setScope(id) {
+    try { sessionStorage.setItem('soltessa.scope', id); } catch (e) {}
+  }
+
+  function paintScopeButton() {
+    const s = scopeObj();
     const chip = document.getElementById('tChip');
-    if (chip && d.accent) chip.style.background = d.accent;
-    try { sessionStorage.setItem('soltessa.dev', d.id); } catch (e) {}
+    document.getElementById('tName').textContent = s.name;
+    document.getElementById('tRole').textContent = s.role;
+    if (chip) { chip.textContent = s.isAll ? '◴' : s.short; chip.style.background = s.accent || 'var(--accent)'; chip.classList.toggle('chip-all', !!s.isAll); }
   }
 
   function renderTenantMenu(activeId) {
     const menu = document.getElementById('tenantMenu');
     if (!menu) return;
+    const allActive = activeId === 'all' ? 'active' : '';
+    const allRow = `<button class="tenant-opt ${allActive}" role="option" data-dev="all">
+        <span class="tenant-opt-chip chip-all" style="background:${ALL.accent}">${icon('grid')}</span>
+        <span class="tenant-opt-meta">
+          <span class="tenant-opt-name">All developments</span>
+          <span class="tenant-opt-sub">Company-wide roll-up · ${allDevs().length} communities</span>
+        </span>
+        ${activeId === 'all' ? icon('check') : ''}
+      </button>`;
     const rows = allDevs().map(d => {
-      const total = d.lots;
-      const sold = (d.status ? (d.status.sold + d.status.production + d.status.closed + d.status.reserved) : 0);
       const isActive = d.id === activeId ? 'active' : '';
       return `<button class="tenant-opt ${isActive}" role="option" data-dev="${d.id}">
         <span class="tenant-opt-chip" style="background:${d.accent || 'var(--accent)'}">${d.short}</span>
         <span class="tenant-opt-meta">
           <span class="tenant-opt-name">${d.name}</span>
-          <span class="tenant-opt-sub">${d.builder} · ${total} lots</span>
+          <span class="tenant-opt-sub">${d.builder} · ${d.lots} lots</span>
         </span>
         ${d.id === activeId ? icon('check') : ''}
       </button>`;
     }).join('');
     menu.innerHTML = `
+      <div class="tenant-menu-label">Scope</div>
+      ${allRow}
+      <div class="tenant-menu-div"></div>
       <div class="tenant-menu-label">Developments</div>
       ${rows}
       <div class="tenant-menu-div"></div>
@@ -221,12 +253,9 @@
     const wrap = sw && sw.closest('.tenant-wrap');
     if (!sw || !wrap) return;
 
-    const devs = allDevs();
-    // restore last-selected dev, else first
-    let activeId = devs[0] && devs[0].id;
-    try { const saved = sessionStorage.getItem('soltessa.dev'); if (saved && devs.some(d => d.id === saved)) activeId = saved; } catch (e) {}
-    const active = devs.find(d => d.id === activeId) || devs[0];
-    if (active) setActiveDev(active);
+    let activeId = getScopeId();
+    if (activeId !== 'all' && !allDevs().some(d => d.id === activeId)) activeId = 'all';
+    paintScopeButton();
     renderTenantMenu(activeId);
 
     function close() { wrap.classList.remove('open'); sw.setAttribute('aria-expanded', 'false'); }
@@ -240,9 +269,9 @@
     document.getElementById('tenantMenu').addEventListener('click', e => {
       const opt = e.target.closest('[data-dev]');
       if (opt) {
-        const d = allDevs().find(x => x.id === opt.dataset.dev);
-        if (d) { setActiveDev(d); activeId = d.id; renderTenantMenu(activeId); }
-        close();
+        const id = opt.dataset.dev;
+        if (id !== getScopeId()) { setScope(id); location.reload(); }  // re-render every scoped view cleanly
+        else close();
         return;
       }
       if (e.target.closest('#onboardOpen')) { close(); openOnboard(); }
@@ -251,7 +280,6 @@
     document.addEventListener('click', e => { if (!wrap.contains(e.target)) close(); });
     document.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
 
-    // expose so the onboarding flow can refresh + select the new dev
     wireTenant._refresh = (newId) => { activeId = newId || activeId; renderTenantMenu(activeId); };
   }
 
@@ -348,7 +376,7 @@
       const seg = document.getElementById('ob-seg').value;
       const price = (document.getElementById('ob-price').value || '').trim() || '—';
       const close = (document.getElementById('ob-close').value || '').trim() || 'TBD';
-      const scope = Array.from(document.querySelectorAll('#ob-scope .chip-toggle.on')).map(c => c.dataset.scope);
+      const scopeCats = Array.from(document.querySelectorAll('#ob-scope .chip-toggle.on')).map(c => c.dataset.scope);
       const designer = (document.querySelector('#ob-designer .chip-toggle.on') || {}).dataset?.designer || 'Unassigned';
       const short = name.split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase() || 'NW';
       const accents = ['#c2703d', '#8a6d3b', '#3d6b8e', '#3f7d58', '#9a5b4a', '#5a6b8c'];
@@ -357,17 +385,19 @@
       const dev = {
         id, short, name, builder, city,
         role: 'New development · ' + city.split(',')[0],
-        scope: scope.length ? scope : ['Flooring'],
+        scope: scopeCats.length ? scopeCats : ['Flooring'],
         segment: seg, lots, priceBand: price, designer,
         started: 'Jun 2026', firstClose: close, buildOut: 'TBD',
         status: { available: lots, reserved: 0, sold: 0, production: 0, closed: 0 },
         plans: [], accent: accents[SESSION_DEVS.length % accents.length], _new: true,
       };
       SESSION_DEVS.push(dev);
-      setActiveDev(dev);
-      if (wireTenant._refresh) wireTenant._refresh(id);
+      // persist for the session so it survives the scope-change reload
+      try { sessionStorage.setItem('soltessa.newdevs', JSON.stringify(SESSION_DEVS)); } catch (e) {}
+      setScope(id);
       closeOnboard();
-      toast(`“${name}” created — ${lots} lots, ${scope.length || 1} scope categories. Now the active development.`);
+      toast(`“${name}” created — ${lots} lots, ${scopeCats.length || 1} scope categories. Switching scope…`);
+      setTimeout(() => location.reload(), 850);
     });
   }
 
@@ -521,7 +551,37 @@
     });
   }
 
-  // crude client-side filter: rows whose text includes the chip label (data-match)
+  // Render a scope-context banner into [data-scopebar]. mode: 'scoped' (reacts to dev) or 'company' (always company-wide).
+  function scopeBanner() {
+    const host = document.querySelector('[data-scopebar]');
+    if (!host) return;
+    const mode = host.getAttribute('data-scopebar') || 'scoped';
+    const s = scope();
+    if (mode === 'company') {
+      host.innerHTML = `<div class="scopebar company"><span class="scope-ic">${icon('grid')}</span>
+        <span class="scope-text"><strong>Company-wide view.</strong> This page spans every development — the price book, suppliers, and roll-ups are shared across all communities.</span></div>`;
+    } else {
+      if (s.isAll) {
+        host.innerHTML = `<div class="scopebar all"><span class="scope-ic">${icon('grid')}</span>
+          <span class="scope-text"><strong>All developments.</strong> Showing every community. Pick one in the scope selector (top-left) to focus this page.</span></div>`;
+      } else {
+        host.innerHTML = `<div class="scopebar focused" style="--scope-accent:${s.dev.accent}"><span class="scope-ic">${icon('pin')}</span>
+          <span class="scope-text"><strong>Showing: ${s.dev.name}</strong><span class="scope-sub"> · ${s.dev.builder} · ${s.dev.lots} lots · ${s.dev.city||''}</span></span>
+          <button class="scope-clear" data-scope-all>${icon('x')}View all developments</button></div>`;
+      }
+    }
+    resolveIcons(host);
+    const clr = host.querySelector('[data-scope-all]');
+    if (clr) clr.addEventListener('click', () => { setScope('all'); location.reload(); });
+  }
+
+  // filter an array of rows by the active development. matchFn(row, devName) → bool.
+  function scopeFilter(rows, matchFn) {
+    const s = scope();
+    if (s.isAll) return rows;
+    return rows.filter(r => matchFn(r, s.dev.name, s.dev));
+  }
+
   function applyFilter(scope, group) {
     const active = Array.from(group.querySelectorAll('.fchip.active')).map(c => (c.dataset.match || c.textContent).trim().toLowerCase());
     const tableSel = group.getAttribute('data-target');
@@ -589,5 +649,5 @@
   }
 
   window.Soltessa = { mount, icon, spark, openDrawer, closeDrawers, resolveIcons, openOnboard, NAV,
-    modal, closeModal, drawer, confirmAction, toast, readForm };
+    modal, closeModal, drawer, confirmAction, toast, readForm, scope, scopeFilter, allDevs };
 })();

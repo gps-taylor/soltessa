@@ -17,9 +17,9 @@
   <div class="page-head">
     <div class="page-head-row">
       <div>
-        <div class="eyebrow">Tuesday · June 29, 2026 &nbsp;·&nbsp; Builders Design Group</div>
+        <div class="eyebrow" id="dashEyebrow">Tuesday · June 29, 2026 &nbsp;·&nbsp; Builders Design Group</div>
         <h1 class="page-title">Good morning, Taylor</h1>
-        <p class="page-sub">Four communities in flight across two builders. Six selection sessions need attention today, and two subcontractor insurance certificates lapse this week.</p>
+        <p class="page-sub" id="dashSub">Four communities in flight across two builders. Six selection sessions need attention today, and two subcontractor insurance certificates lapse this week.</p>
       </div>
       <div class="flex gap-10">
         <button class="btn"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5M12 15V3"/></svg>Export brief</button>
@@ -27,6 +27,11 @@
       </div>
     </div>
   </div>
+
+  <div data-scopebar="scoped"></div>
+
+  <!-- Company roll-up (All-developments view only) -->
+  <div id="rollup"></div>
 
   <!-- Signature: the data lineage rail -->
   <div style="margin-bottom:22px">
@@ -118,6 +123,49 @@
 
   S.mount({ active: 'dashboard' });
 
+  // ---- scope-aware dashboard (two altitudes) ----
+  const SC = S.scope();
+  const commName = SC.isAll ? null : SC.dev.name;
+  if (!SC.isAll) {
+    document.getElementById('dashEyebrow').innerHTML = `Tuesday · June 29, 2026 &nbsp;·&nbsp; ${SC.dev.name} · ${SC.dev.builder}`;
+    const b = DEMO.byComm(DEMO.buyers, commName);
+    const open = DEMO.byComm(DEMO.priceRequests, commName).filter(p=>p.status==='Awaiting').length;
+    document.getElementById('dashSub').textContent = `${SC.dev.lots} lots in ${SC.dev.name}. ${b.length} active buyers, ${open} open price request${open===1?'':'s'}. Focused view — switch scope to see the whole company.`;
+  } else {
+    // Company command center: per-development roll-up
+    const rows = DEMO.communities.map(c => {
+      const buyers = DEMO.byComm(DEMO.buyers, c.name).length;
+      const q = DEMO.byComm(DEMO.quotes, c.name).reduce((s,x)=>s+x.amount,0);
+      const pos = DEMO.byComm(DEMO.pos, c.name).length;
+      const tickets = DEMO.byComm(DEMO.serviceTickets, c.name).length;
+      const sold = c.status.sold + c.status.production + c.status.closed;
+      const pct = Math.round((sold / c.lots) * 100);
+      return { c, buyers, q, pos, tickets, sold, pct };
+    });
+    document.getElementById('rollup').innerHTML = `
+      <div class="card mb-16">
+        <div class="card-head"><div><div class="card-title">${S.icon('grid')} Company roll-up</div><div class="card-sub">Every development at a glance — click any row to focus</div></div><span class="badge accent"><span class="d"></span>${DEMO.communities.length} communities</span></div>
+        <div class="card-body flush"><div class="tbl-wrap"><table class="tbl tbl-clickable">
+          <thead><tr><th>Development</th><th>Builder</th><th class="right">Lots</th><th class="right">Sold-through</th><th class="right">Buyers</th><th class="right">Quotes $</th><th class="right">Open POs</th><th class="right">Service</th></tr></thead>
+          <tbody>${rows.map(r=>`<tr data-dev="${r.c.id}">
+            <td><div class="cell-lead"><span class="lot-cell ${''}" style="width:10px;height:10px;background:${r.c.accent};border-radius:3px"></span><span class="primary">${r.c.name}</span></div><div class="muted" style="margin-left:18px">${r.c.city}</div></td>
+            <td class="muted">${r.c.builder}</td>
+            <td class="num right tnum">${r.c.lots}</td>
+            <td class="num right"><div class="flex items-center gap-8" style="justify-content:flex-end"><span class="tnum muted">${r.pct}%</span><div class="allow-track" style="width:54px"><div class="allow-fill" style="width:${r.pct}%;background:${r.c.accent}"></div></div></div></td>
+            <td class="num right tnum">${r.buyers}</td>
+            <td class="num right tnum">$${Math.round(r.q/1000)}k</td>
+            <td class="num right tnum">${r.pos}</td>
+            <td class="num right">${r.tickets?`<span class="badge ${r.tickets>1?'warn':'neutral'}"><span class="d"></span>${r.tickets}</span>`:'<span class="muted">—</span>'}</td>
+          </tr>`).join('')}</tbody>
+        </table></div></div>
+      </div>`;
+    S.resolveIcons(document.getElementById('rollup'));
+    document.querySelectorAll('#rollup tr[data-dev]').forEach(tr => tr.addEventListener('click', () => {
+      try { sessionStorage.setItem('soltessa.scope', tr.dataset.dev); } catch(e){}
+      location.reload();
+    }));
+  }
+
   // ---- lineage rail ----
   const steps = [
     { n: '01', label: 'Plan + Allowance', state: 'Acacia 2210', cls: 'done' },
@@ -164,9 +212,12 @@
     ['Color: cabinet finish', 'Color Selection', 'Lot 17 · Sienna Pass', 'Buyer', '<span class="badge warn"><span class="d"></span>Outstanding</span>'],
     ['Carpet allowance overage', 'Selection', 'Lot 05 · Aspen Meadows', 'Sales', '<span class="badge info"><span class="d"></span>Needs sign-off</span>'],
   ];
-  document.getElementById('attn').innerHTML = attn.map(r => `
+  const attnShown = commName ? attn.filter(r => r[2].includes(commName)) : attn;
+  document.getElementById('attn').innerHTML = (attnShown.length ? attnShown : attn).map(r => `
     <tr><td class="primary">${r[0]}</td><td><span class="tag">${r[1]}</span></td>
     <td>${r[2]}</td><td class="muted">${r[3]}</td><td class="right">${r[4]}</td></tr>`).join('');
+  // keep attn reference aligned for click handlers
+  window._attnShown = attnShown.length ? attnShown : attn;
 
   // ---- allowance pulse ----
   const allow = [
@@ -296,7 +347,7 @@
   const stageRoute = { 'Price Request':'quotes.html', 'Quote':'quotes.html', 'Selection':'design-studio.html', 'Purchase Order':'purchasing.html', 'Color Selection':'design-studio.html' };
   document.querySelectorAll('#attn tr').forEach((tr, i) => {
     tr.addEventListener('click', () => {
-      const r = attn[i];
+      const r = (window._attnShown || attn)[i];
       S.modal({ eyebrow: r[1] + ' · ' + r[2], title: r[0], size: 'sm',
         body: `<div class="meta-list">
           <div class="ml-row"><span class="ml-k">Stage</span><span class="ml-v"><span class="tag">${r[1]}</span></span></div>

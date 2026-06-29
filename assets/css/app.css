@@ -628,3 +628,33 @@ table.tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
 .swatch-opt input { display: none; }
 .swatch-name { font-size: 12px; font-weight: 500; color: var(--ink); }
 @media (max-width:560px){ .prod-grid{grid-template-columns:1fr} }
+
+/* ===== scope selector chip + nav altitude dots ===== */
+.tenant-chip.chip-all { background: var(--rail-2) !important; border: 1px dashed #4a5460; color: var(--rail-text); font-size: 13px; }
+.tenant-opt-chip.chip-all svg { width: 15px; height: 15px; color: #fff; }
+.nav-alt { width: 6px; height: 6px; border-radius: 50%; margin-left: auto; flex: none; }
+.nav-alt.co { background: #5a6b8c; }            /* company-wide */
+.nav-alt.dev { background: var(--accent); }      /* development-scoped */
+.nav-item .nav-badge + .nav-alt, .nav-item .nav-alt + .nav-badge { margin-left: 6px; }
+.nav-item .nav-alt { margin-left: auto; }
+.nav-item .nav-badge { margin-left: 8px; }
+
+/* ===== scope context banner ===== */
+.scopebar { display: flex; align-items: center; gap: 11px; padding: 11px 15px; border-radius: var(--r); font-size: 13px; margin-bottom: 18px; border: 1px solid var(--line); }
+.scopebar .scope-ic { display: inline-flex; flex: none; }
+.scopebar .scope-ic svg { width: 16px; height: 16px; }
+.scopebar .scope-text { flex: 1; color: var(--ink-2); }
+.scopebar .scope-text strong { color: var(--ink); }
+.scopebar .scope-sub { color: var(--ink-3); }
+.scopebar.company { background: #eef1f6; border-color: #dde3ec; }
+.scopebar.company .scope-ic { color: #5a6b8c; }
+.scopebar.all { background: var(--surface-2); }
+.scopebar.all .scope-ic { color: var(--ink-3); }
+.scopebar.focused { background: color-mix(in srgb, var(--scope-accent) 9%, white); border-color: color-mix(in srgb, var(--scope-accent) 28%, white); }
+.scopebar.focused .scope-ic { color: var(--scope-accent); }
+.scope-clear { display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--line-2); background: var(--surface); color: var(--ink-2); border-radius: 8px; padding: 5px 10px; font-size: 12px; font-weight: 500; cursor: pointer; font-family: inherit; transition: border-color .12s; flex: none; }
+.scope-clear:hover { border-color: var(--accent); color: var(--accent-d); }
+.scope-clear svg { width: 13px; height: 13px; }
+
+/* scope legend in rail footer area */
+.scope-legend { display: flex; gap: 14px; padding: 0 22px 10px; font-size: 10.5px; color: #6b7280; }

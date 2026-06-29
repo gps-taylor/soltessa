@@ -9,6 +9,15 @@ This repository is a **clickable front-end prototype** — a static site you can
 ## What this is (and isn't)
 
 - **Is:** a faithful, navigable picture of all ten modules, the shared shell, and the signature workflows — enough to validate scope, spark discussion, and align the team. **Every button, tab, filter, row, and form is wired** — selections open modals, tables filter, rows open detail drawers, and actions confirm with toasts (all against fabricated data).
+
+## Scope model — three altitudes
+
+The top-left **scope selector** controls what the operational pages show:
+
+- **All developments** — a company-wide roll-up. The Dashboard becomes a command center with a per-development table.
+- **A single development** (e.g. Sienna Pass) — every development-scoped page filters to that community and shows a context banner.
+
+Nav items carry an **altitude dot**: amber = development-scoped (reacts to the selector), blue-grey = company-wide (shared across all communities — price book, suppliers, users, templates, subcontractor performance — and deliberately unaffected by the selector). This mirrors how Pharaoh/IBSWIN and BOSS separate account-level setup from per-job work.
 - **Isn't:** a working application. Nothing persists, forms don't submit, and the data is invented.
 
 **Product identity.** Soltessa is its own brand. **Builders Design Group (BDG)** — a Las Vegas flooring / cabinetry / countertop finisher — is the pilot tenant, so the demo data is BDG-flavored. The shell is **multi-tenant-aware** (note the builder/client switcher top-left) even though the first deployment is BDG-only.

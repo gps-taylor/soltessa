@@ -32,6 +32,8 @@
     </div>
   </div>
 
+  <div data-scopebar="scoped"></div>
+
   <div class="kpi-grid mb-16" id="kpis"></div>
 
   <div class="seg mb-16" id="tabs">
@@ -81,6 +83,7 @@
 
   <!-- PERFORMANCE -->
   <div data-panel="perf" style="display:none">
+    <div class="notice" style="background:#eef1f6;border:1px solid #dde3ec;margin-bottom:16px"><span data-ic="grid" style="color:#5a6b8c"></span><div>Subcontractor performance is evaluated <b>company-wide</b> — a sub's callback rate spans every community they work. This view does not change with the development scope.</div></div>
     <div class="card">
       <div class="card-head"><div class="card-title"><span data-ic="users"></span>Subcontractor performance</div><span class="card-sub">Callbacks, completion rates, problem-sub isolation — feeds supplier records (Module 3) and bid awarding (Module 5)</span></div>
       <div class="card-body flush"><div class="tbl-wrap"><table class="tbl">
@@ -95,23 +98,21 @@
 <script src="assets/js/app.js"></script>
 <script>
   const S=window.Soltessa; S.mount({active:'service'});
+  const SC=S.scope(); const commName = SC.isAll ? null : SC.dev.name;
+  const tkData = DEMO.byComm(DEMO.serviceTickets, commName);
+  const openCount = tkData.filter(t=>t.status==='Open').length;
 
   const kpis=[
-    {label:'Open tickets',icon:'inbox',value:'14',delta:'+3 this week',d:'flat',s:[9,11,10,12,13,13,14]},
+    {label:'Open tickets',icon:'inbox',value:String(tkData.length),delta: SC.isAll?'+3 this week':'in this community',d:'flat',s:[9,11,10,12,13,13,14]},
     {label:'Avg resolution',icon:'clock',value:'6.2d',delta:'−0.8d vs last qtr',d:'up',s:[8,7.5,7.1,6.8,6.5,6.3,6.2]},
-    {label:'Warranty claims (90d)',icon:'flag',value:'31',delta:'tile & grout leading',d:'flat',s:[22,25,27,28,30,30,31]},
-    {label:'Avg callback rate',icon:'trend',value:'3.4%',delta:'TileRight an outlier',d:'down',s:[5.1,4.6,4.2,3.9,3.6,3.5,3.4]},
+    {label:'Warranty claims (90d)',icon:'flag',value: SC.isAll?'31':String(tkData.length*3+2),delta:'tile & grout leading',d:'flat',s:[22,25,27,28,30,30,31]},
+    {label:'Avg callback rate',icon:'trend',value:'3.4%',delta:'company-wide · all subs',d:'down',s:[5.1,4.6,4.2,3.9,3.6,3.5,3.4]},
   ];
   document.getElementById('kpis').innerHTML=kpis.map(k=>`<div class="kpi"><div class="kpi-label">${S.icon(k.icon)} ${k.label}</div><div class="kpi-value">${k.value}</div><div class="kpi-delta ${k.d}">${k.delta}</div>${S.spark(k.s)}</div>`).join('');
 
-  const tickets=[
-    ['WO-1042 · Patel','Lot 14 · Sienna Pass','Grout cracking','TileRight','3 days','<span class="badge danger"><span class="d"></span>Open'],
-    ['WO-1039 · Cortez','Lot 02 · Sienna Pass','Cabinet door align','Vegas Cabinet Co','5 days','<span class="badge warn"><span class="d"></span>Scheduled'],
-    ['WO-1036 · Vasquez','Lot 17 · Desert Vista','Plank lifting','Premier Floors','8 days','<span class="badge warn"><span class="d"></span>In progress'],
-    ['WO-1031 · Webb','Lot 22 · Cholla Ridge','Countertop seam','StoneWorks','12 days','<span class="badge info"><span class="d"></span>Awaiting parts'],
-    ['WO-1028 · Nguyen','Lot 09 · Desert Vista','Carpet seam','Premier Floors','2 days','<span class="badge danger"><span class="d"></span>Open'],
-  ];
-  document.getElementById('tickets').innerHTML=tickets.map(t=>`<tr data-drawer="woDrawer" data-wo="${t[0]}"><td class="primary">${t[0]}</td><td><span class="tag">${t[2]}</span></td><td class="muted">${t[3]}</td><td class="num right muted">${t[4]}</td><td>${t[5]}</span></td></tr>`).join('');
+  const tkBadge = s => ({Open:'danger',Scheduled:'warn','In progress':'warn','Awaiting parts':'info'}[s]||'neutral');
+  const tickets = tkData.map(t => [t.id, `${t.id} · ${t.buyer.split(' ').pop()}`, t.cat, t.crew, t.age, `<span class="badge ${tkBadge(t.status)}"><span class="d"></span>${t.status}`, t.comm]);
+  document.getElementById('tickets').innerHTML = tickets.length ? tickets.map(t=>`<tr data-drawer="woDrawer" data-wo="${t[0]}"><td class="primary">${t[1]}</td><td><span class="tag">${t[2]}</span></td><td class="muted">${t[3]}</td><td class="num right muted">${t[4]}</td><td>${t[5]}</span></td></tr>`).join('') : `<tr><td colspan="5" class="muted" style="text-align:center;padding:24px">No open service requests in this development.</td></tr>`;
 
   const ct=[['Tile & grout',9,'danger'],['Cabinetry',7,'warn'],['Flooring — plank',6,'warn'],['Carpet',5,'info'],['Countertops',4,'info']];
   const ctMax=9;
@@ -119,23 +120,22 @@
     <div><div class="flex between fs-13 mb-4"><span class="fw-600">${c[0]}</span><span class="t-mono muted">${c[1]}</span></div>
     <div class="allow-track"><div class="allow-fill ${c[2]==='danger'?'over':c[2]==='warn'?'warn':''}" style="width:${Math.round(c[1]/ctMax*100)}%"></div></div></div>`).join('');
 
-  const homes=[
-    ['Raj &amp; Priya Patel','Lot 14 · Acacia 2210','—','In production','1','<span class="badge accent"><span class="d"></span>Pre-close'],
-    ['The Cortez family','Lot 02 · Acacia 2210','Apr 18, 2026','Apr 18, 2027','2','<span class="badge ok"><span class="d"></span>Under warranty'],
-    ['Marcus Webb','Lot 22 · Mesquite 3120','Mar 02, 2026','Mar 02, 2027','3','<span class="badge ok"><span class="d"></span>Under warranty'],
-    ['The Diaz family','Lot 11 · Sabino 2640','Aug 14, 2025','Aug 14, 2026','1','<span class="badge warn"><span class="d"></span>Expiring &lt;60d'],
-    ['Patterson','Lot 05 · Ocotillo 1980','Jan 09, 2025','Jan 09, 2026','4','<span class="badge neutral"><span class="d"></span>Expired'],
+  const homesAll=[
+    ['Raj &amp; Priya Patel','Lot 14 · Acacia 2210','—','In production','1','<span class="badge accent"><span class="d"></span>Pre-close','Sienna Pass'],
+    ['The Cortez family','Lot 02 · Acacia 2210','Apr 18, 2026','Apr 18, 2027','2','<span class="badge ok"><span class="d"></span>Under warranty','Sienna Pass'],
+    ['Elena Vasquez','Lot 17 · Sabino 2640','—','In production','1','<span class="badge accent"><span class="d"></span>Pre-close','Sienna Pass'],
+    ['Marcus Webb','Lot 22 · Mesquite 3120','Mar 02, 2026','Mar 02, 2027','3','<span class="badge ok"><span class="d"></span>Under warranty','Desert Vista'],
+    ['The Nguyen family','Lot 09 · Ocotillo 1980','Feb 11, 2026','Feb 11, 2027','1','<span class="badge ok"><span class="d"></span>Under warranty','Cholla Ridge'],
+    ['The Diaz family','Lot 11 · Ocotillo 1980','Aug 14, 2025','Aug 14, 2026','1','<span class="badge warn"><span class="d"></span>Expiring &lt;60d','Cholla Ridge'],
+    ['The Patterson family','Lot 05 · Acacia 2210','Jan 09, 2025','Jan 09, 2026','4','<span class="badge neutral"><span class="d"></span>Expired','Aspen Meadows'],
   ];
-  document.getElementById('homes').innerHTML=homes.map(h=>`<tr><td class="primary">${h[0]}</td><td class="muted">${h[1]}</td><td class="num right muted">${h[2]}</td><td class="num right">${h[3]}</td><td class="num right">${h[4]}</td><td>${h[5]}</span></td></tr>`).join('');
+  const homes = commName ? homesAll.filter(h=>h[6]===commName) : homesAll;
+  document.getElementById('homes').innerHTML = homes.length ? homes.map(h=>`<tr><td class="primary">${h[0]}</td><td class="muted">${h[1]}</td><td class="num right muted">${h[2]}</td><td class="num right">${h[3]}</td><td class="num right">${h[4]}</td><td>${h[5]}</span></td></tr>`).join('') : `<tr><td colspan="6" class="muted" style="text-align:center;padding:24px">No homeowner records in this development.</td></tr>`;
 
-  const aging=[
-    ['WO-1031','Webb · Lot 22','StoneWorks','Countertop seam','Jun 17','12d','<span class="badge danger"><span class="d"></span>Overdue'],
-    ['WO-1036','Vasquez · Lot 17','Premier Floors','Plank lifting','Jun 21','8d','<span class="badge warn"><span class="d"></span>Aging'],
-    ['WO-1039','Cortez · Lot 02','Vegas Cabinet Co','Door align','Jun 24','5d','<span class="badge info"><span class="d"></span>On track'],
-    ['WO-1042','Patel · Lot 14','TileRight','Grout cracking','Jun 26','3d','<span class="badge info"><span class="d"></span>On track'],
-    ['WO-1028','Nguyen · Lot 09','Premier Floors','Carpet seam','Jun 27','2d','<span class="badge info"><span class="d"></span>On track'],
-  ];
-  document.getElementById('aging').innerHTML=aging.map(a=>`<tr data-drawer="woDrawer" data-wo="${a[0]}"><td class="primary">${a[0]}</td><td class="muted">${a[1]}</td><td>${a[2]}</td><td class="muted">${a[3]}</td><td class="num right muted">${a[4]}</td><td class="num right fw-600">${a[5]}</td><td>${a[6]}</span></td></tr>`).join('');
+  const agingBadge = age => { const d=parseInt(age); return d>=12?'<span class="badge danger"><span class="d"></span>Overdue':d>=8?'<span class="badge warn"><span class="d"></span>Aging':'<span class="badge info"><span class="d"></span>On track'; };
+  const issuedDate = { '12 days':'Jun 17','8 days':'Jun 21','5 days':'Jun 24','3 days':'Jun 26','2 days':'Jun 27' };
+  const aging = tkData.slice().sort((a,b)=>parseInt(b.age)-parseInt(a.age)).map(t => [t.id, `${t.buyer.split(' ').pop()} · ${t.lot||''}`.replace(' · ',' · Lot '), t.crew, t.cat, issuedDate[t.age]||'—', t.age.replace(' days','d'), agingBadge(t.age)]);
+  document.getElementById('aging').innerHTML = aging.length ? aging.map(a=>`<tr data-drawer="woDrawer" data-wo="${a[0]}"><td class="primary">${a[0]}</td><td class="muted">${a[1]}</td><td>${a[2]}</td><td class="muted">${a[3]}</td><td class="num right muted">${a[4]}</td><td class="num right fw-600">${a[5]}</td><td>${a[6]}</span></td></tr>`).join('') : `<tr><td colspan="7" class="muted" style="text-align:center;padding:24px">No work orders in this development.</td></tr>`;
 
   const perf=[
     ['Premier Floors','Flooring','38','2','5.3%','4.1d','<span class="badge ok"><span class="d"></span>Good'],

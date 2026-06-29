@@ -24,6 +24,8 @@
     </div>
   </div>
 
+  <div data-scopebar="scoped"></div>
+
   <!-- workflow stepper -->
   <div class="card mb-16"><div class="card-body" style="padding:16px 20px">
     <div class="stepper">
@@ -86,32 +88,38 @@
 <script src="assets/js/app.js"></script>
 <script>
   const S=window.Soltessa; S.mount({active:'quotes'});
+  const SC = S.scope();
+  const commName = SC.isAll ? null : SC.dev.name;
+  const showComm = SC.isAll; // show community column only in all-dev view
 
-  const pr=[
-    ['PR-228 · Calacatta Gold quartz','Cambria','<span class="badge warn"><span class="d"></span>Awaiting','—'],
-    ['PR-231 · Custom stair-nose','Mohawk','<span class="badge warn"><span class="d"></span>Awaiting','—'],
-    ['PR-225 · Slate porcelain bath','Daltile','<span class="badge ok"><span class="d"></span>Answered','1.1 days'],
-    ['PR-219 · Espresso cabinet upgrade','KraftMaid','<span class="badge ok"><span class="d"></span>Answered','1.8 days'],
-    ['PR-212 · Granite Ubatuba','MSI','<span class="badge neutral">Expired','—'],
-  ];
-  document.getElementById('pr').innerHTML=pr.map(r=>`<tr><td class="primary">${r[0]}</td><td class="muted">${r[1]}</td><td class="right">${r[2]}</span></td><td class="num right muted">${r[3]}</td></tr>`).join('');
+  // Price requests (scoped)
+  const prData = DEMO.byComm(DEMO.priceRequests, commName);
+  const prBadge = s => s==='Awaiting'?'<span class="badge warn"><span class="d"></span>Awaiting':s==='Answered'?'<span class="badge ok"><span class="d"></span>Answered':'<span class="badge neutral">Expired';
+  const pr = prData.map(p => [`${p.id} · ${p.item}`, p.vendor, prBadge(p.status), p.turn]);
+  document.getElementById('pr').innerHTML = pr.length ? pr.map(r=>`<tr><td class="primary">${r[0]}</td><td class="muted">${r[1]}</td><td class="right">${r[2]}</span></td><td class="num right muted">${r[3]}</td></tr>`).join('') : emptyRow(4);
 
-  const qt=[
-    ['Q-1043','Lot 09 · Cholla Ridge','$48,200','<span class="badge ok"><span class="d"></span>Approved'],
-    ['Q-1041','Lot 22 · Desert Vista','$61,750','<span class="badge info"><span class="d"></span>Pending'],
-    ['Q-1039','Lot 14 · Sienna Pass','$39,480','<span class="badge info"><span class="d"></span>Pending'],
-    ['Q-1037','Lot 05 · Aspen Meadows','$32,900','<span class="badge accent"><span class="d"></span>Draft'],
-  ];
-  document.getElementById('qt').innerHTML=qt.map(r=>`<tr><td class="primary t-mono">${r[0]}</td><td class="muted">${r[1]}</td><td class="num tnum primary">${r[2]}</td><td class="right">${r[3]}</span></td></tr>`).join('');
+  // Quotes (scoped)
+  const qtData = DEMO.byComm(DEMO.quotes, commName);
+  const money = n => '$'+n.toLocaleString();
+  const qBadge = s => s==='Approved'?'<span class="badge ok"><span class="d"></span>Approved':s==='Draft'?'<span class="badge accent"><span class="d"></span>Draft':'<span class="badge info"><span class="d"></span>Pending';
+  const qt = qtData.map(q => [q.id, `${q.lot} · ${q.comm}`, money(q.amount), qBadge(q.status)]);
+  document.getElementById('qt').innerHTML = qt.length ? qt.map(r=>`<tr><td class="primary t-mono">${r[0]}</td><td class="muted">${r[1]}</td><td class="num tnum primary">${r[2]}</td><td class="right">${r[3]}</span></td></tr>`).join('') : emptyRow(4);
 
-  const reg=[
-    ['Raj & Priya Patel','Lot 14 · Sienna Pass','Acacia 2210','T. Morgan','<span class="badge info"><span class="d"></span>Quote','+$1,040'],
-    ['The Nguyen family','Lot 09 · Cholla Ridge','Ocotillo 1980','D. Reyes','<span class="badge ok"><span class="d"></span>Contract','+$2,310'],
-    ['Marcus Webb','Lot 22 · Desert Vista','Mesquite 3120','T. Morgan','<span class="badge warn"><span class="d"></span>Price Request','+$4,120'],
-    ['Sofia & Aaron Klein','Lot 31 · Desert Vista','Mesquite 3120','D. Reyes','<span class="badge accent"><span class="d"></span>Selection','+$680'],
-    ['The Patterson family','Lot 05 · Aspen Meadows','Acacia 2210','T. Morgan','<span class="badge accent"><span class="d"></span>Selection','+$240'],
-    ['Elena Vasquez','Lot 17 · Sienna Pass','Sabino 2640','D. Reyes','<span class="badge neutral">PO issued','+$3,890'],
-  ];
+  // Buyer selections register (scoped) — derived from buyers
+  const regData = DEMO.byComm(DEMO.buyers, commName);
+  const stageBadge = st => ({production:'<span class="badge neutral">PO issued',escrow:'<span class="badge info"><span class="d"></span>Quote',contingency:'<span class="badge warn"><span class="d"></span>Price Request',closed:'<span class="badge ok"><span class="d"></span>Contract',selection:'<span class="badge accent"><span class="d"></span>Selection'}[st]||'<span class="badge accent"><span class="d"></span>Selection');
+  const reg = regData.map(b => [b.name, `${b.lot} · ${b.comm}`, b.plan, b.designer, stageBadge(b.status), b.over?('+$'+b.over.toLocaleString()):'$0']);
+
+  function emptyRow(cols){ return `<tr><td colspan="${cols}" class="muted" style="text-align:center;padding:24px">No items in this development.</td></tr>`; }
+
+  // dynamic in-flight badge
+  const inFlight = qtData.filter(q=>q.status!=='Approved').reduce((s,q)=>s+q.amount,0);
+  const qtFlightBadge = document.querySelector('#qt')?.closest('.card')?.querySelector('.card-head .badge');
+  if (qtFlightBadge) qtFlightBadge.innerHTML = `<span class="d"></span>$${Math.round(inFlight/1000)}k in flight`;
+  const prOpen = prData.filter(p=>p.status==='Awaiting').length;
+  const prOpenBadge = document.querySelector('#pr')?.closest('.card')?.querySelector('.card-head .badge');
+  if (prOpenBadge) prOpenBadge.innerHTML = `<span class="d"></span>${prOpen} open`;
+
   document.getElementById('reg').innerHTML=reg.map(r=>{
     const over=r[5]!=='$0';
     return `<tr><td class="primary">${r[0]}</td><td class="muted">${r[1]}</td><td>${r[2]}</td><td class="muted">${r[3]}</td><td>${r[4]}</span></td><td class="num tnum right" style="color:${over?'var(--danger)':'var(--ink-3)'}">${r[5]}</td></tr>`;

@@ -24,6 +24,8 @@
     </div>
   </div>
 
+  <div data-scopebar="scoped"></div>
+
   <!-- community summary -->
   <div class="kpi-grid mb-16" id="comm"></div>
 
@@ -82,7 +84,8 @@
   }));
 
   // site map (cells match active community)
-  let activeComm = DEMO.communities[0];
+  const SC = S.scope();
+  let activeComm = (!SC.isAll && DEMO.communities.find(c=>c.name===SC.dev.name)) || DEMO.communities[0];
   function renderMap() {
     const statuses=[];
     Object.entries(activeComm.status).forEach(([k,n])=>{ for(let i=0;i<n;i++) statuses.push(k); });

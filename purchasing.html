@@ -24,6 +24,8 @@
     </div>
   </div>
 
+  <div data-scopebar="scoped"></div>
+
   <div class="kpi-grid mb-16" id="kpis"></div>
 
   <div class="grid grid-2-1 mb-16">
@@ -61,23 +63,22 @@
 <script src="assets/js/app.js"></script>
 <script>
   const S=window.Soltessa; S.mount({active:'purchasing'});
+  const SC=S.scope(); const commName = SC.isAll ? null : SC.dev.name;
+  const poData = DEMO.byComm(DEMO.pos, commName);
+  const poBadge = s => ({Received:'ok',Acknowledged:'info',Issued:'info',Draft:'accent'}[s]||'neutral');
+  const committed = poData.reduce((a,p)=>a+p.amount,0);
+  const awaiting = poData.filter(p=>p.status==='Draft').length;
+  const received = poData.filter(p=>p.status==='Received').length;
   const kpis=[
-    {label:'Open POs',icon:'purchasing',value:'11',delta:'$214k committed',d:'flat',s:[14,12,13,11,10,11,11]},
-    {label:'Awaiting issue',icon:'file',value:'3',delta:'ready to send',d:'down',s:[6,5,4,4,3,3,3]},
-    {label:'Change orders MTD',icon:'edit',value:'8',delta:'net +$6,420',d:'up',s:[3,4,5,6,7,7,8]},
-    {label:'Received this week',icon:'box',value:'14',delta:'on schedule',d:'up',s:[8,9,11,10,12,13,14]},
+    {label:'Open POs',icon:'purchasing',value:String(poData.length),delta:`$${Math.round(committed/1000)}k committed`,d:'flat',s:[14,12,13,11,10,11,11]},
+    {label:'Awaiting issue',icon:'file',value:String(awaiting),delta:'ready to send',d:'down',s:[6,5,4,4,3,3,3]},
+    {label:'Change orders MTD',icon:'edit',value: SC.isAll?'8':'3',delta:'net +$6,420',d:'up',s:[3,4,5,6,7,7,8]},
+    {label:'Received this week',icon:'box',value:String(received),delta:'on schedule',d:'up',s:[8,9,11,10,12,13,14]},
   ];
   document.getElementById('kpis').innerHTML=kpis.map(k=>`<div class="kpi"><div class="kpi-label">${S.icon(k.icon)} ${k.label}</div><div class="kpi-value">${k.value}</div><div class="kpi-delta ${k.d}">${k.delta}</div>${S.spark(k.s)}</div>`).join('');
 
-  const po=[
-    ['PO-3318','Daltile','Lot 14 · Sienna Pass','$2,184','<span class="badge ok"><span class="d"></span>Received'],
-    ['PO-3319','Shaw','Lot 14 · Sienna Pass','$1,792','<span class="badge info"><span class="d"></span>Acknowledged'],
-    ['PO-3320','KraftMaid','Lot 14 · Sienna Pass','$8,170','<span class="badge info"><span class="d"></span>Issued'],
-    ['PO-3321','Cambria','Lot 22 · Desert Vista','$4,096','<span class="badge accent"><span class="d"></span>Draft'],
-    ['PO-3315','Mohawk','Lot 09 · Cholla Ridge','$3,240','<span class="badge ok"><span class="d"></span>Received'],
-    ['PO-3312','StoneWorks','Lot 17 · Sienna Pass','$5,880','<span class="badge info"><span class="d"></span>Issued'],
-  ];
-  document.getElementById('po').innerHTML=po.map(r=>`<tr><td class="primary t-mono">${r[0]}</td><td class="muted">${r[1]}</td><td class="muted">${r[2]}</td><td class="num tnum primary">${r[3]}</td><td class="right">${r[4]}</span></td></tr>`).join('');
+  const po = poData.map(p => [p.id, p.supplier, `${p.lot} · ${p.comm}`, '$'+p.amount.toLocaleString(), `<span class="badge ${poBadge(p.status)}"><span class="d"></span>${p.status}`]);
+  document.getElementById('po').innerHTML = po.length ? po.map(r=>`<tr><td class="primary t-mono">${r[0]}</td><td class="muted">${r[1]}</td><td class="muted">${r[2]}</td><td class="num tnum primary">${r[3]}</td><td class="right">${r[4]}</span></td></tr>`).join('') : `<tr><td colspan="5" class="muted" style="text-align:center;padding:24px">No purchase orders in this development.</td></tr>`;
 
   const co=[
     ['CO-58','Lot 14 · primary bath tile re-selection','+$312'],
