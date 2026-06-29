@@ -78,12 +78,6 @@
     { id: 'settings',   label: 'Settings & Admin',    icon: 'settings',   href: 'settings.html' },
   ];
 
-  const TENANTS = [
-    { id: 'bdg',  name: 'Builders Design Group', short: 'BD', role: 'Pilot tenant · Las Vegas' },
-    { id: 'sun',  name: 'Sunridge Communities',  short: 'SR', role: 'Builder client' },
-    { id: 'mesa', name: 'Mesa Verde Homes',      short: 'MV', role: 'Builder client' },
-  ];
-
   function buildRail(active) {
     const items = NAV.map(n => {
       if (n.sec) return `<div class="nav-section-label">${n.sec}</div>`;
@@ -103,13 +97,16 @@
         <span class="rail-wordmark">Soltessa<span class="dot">.</span></span>
       </div>
 
-      <div class="tenant-switch" id="tenantSwitch" role="button" tabindex="0" aria-label="Switch builder client">
-        <span class="tenant-chip" id="tChip">BD</span>
-        <span class="tenant-meta">
-          <span class="tenant-name" id="tName">Builders Design Group</span>
-          <span class="tenant-role" id="tRole">Pilot tenant · Las Vegas</span>
-        </span>
-        ${icon('chevron')}
+      <div class="tenant-wrap">
+        <button class="tenant-switch" id="tenantSwitch" aria-haspopup="listbox" aria-expanded="false" aria-label="Switch development">
+          <span class="tenant-chip" id="tChip">SP</span>
+          <span class="tenant-meta">
+            <span class="tenant-name" id="tName">Sienna Pass</span>
+            <span class="tenant-role" id="tRole">Active development · Henderson</span>
+          </span>
+          ${icon('chevron')}
+        </button>
+        <div class="tenant-menu" id="tenantMenu" role="listbox" aria-label="Developments"></div>
       </div>
 
       <nav class="nav-scroll">${items}</nav>
@@ -154,8 +151,14 @@
     main.appendChild(content);
     root.appendChild(main);
 
+    // inject the onboarding modal once per page
+    if (!document.getElementById('onboardModal')) {
+      document.body.insertAdjacentHTML('beforeend', buildOnboardModal());
+    }
+
     resolveIcons(document);
     wireTenant();
+    wireOnboard();
     wireMenu();
     wireDrawers();
   }
@@ -169,18 +172,211 @@
     });
   }
 
+  function devList() {
+    return (window.DEMO && window.DEMO.developments) ? window.DEMO.developments : [];
+  }
+
+  // session-only list of developments onboarded during this visit
+  const SESSION_DEVS = [];
+
+  function allDevs() { return devList().concat(SESSION_DEVS); }
+
+  function setActiveDev(d) {
+    document.getElementById('tChip').textContent = d.short;
+    document.getElementById('tName').textContent = d.name;
+    document.getElementById('tRole').textContent = d.role;
+    const chip = document.getElementById('tChip');
+    if (chip && d.accent) chip.style.background = d.accent;
+    try { sessionStorage.setItem('soltessa.dev', d.id); } catch (e) {}
+  }
+
+  function renderTenantMenu(activeId) {
+    const menu = document.getElementById('tenantMenu');
+    if (!menu) return;
+    const rows = allDevs().map(d => {
+      const total = d.lots;
+      const sold = (d.status ? (d.status.sold + d.status.production + d.status.closed + d.status.reserved) : 0);
+      const isActive = d.id === activeId ? 'active' : '';
+      return `<button class="tenant-opt ${isActive}" role="option" data-dev="${d.id}">
+        <span class="tenant-opt-chip" style="background:${d.accent || 'var(--accent)'}">${d.short}</span>
+        <span class="tenant-opt-meta">
+          <span class="tenant-opt-name">${d.name}</span>
+          <span class="tenant-opt-sub">${d.builder} · ${total} lots</span>
+        </span>
+        ${d.id === activeId ? icon('check') : ''}
+      </button>`;
+    }).join('');
+    menu.innerHTML = `
+      <div class="tenant-menu-label">Developments</div>
+      ${rows}
+      <div class="tenant-menu-div"></div>
+      <button class="tenant-add" id="onboardOpen">${icon('plus')}<span>Onboard new development</span></button>`;
+    resolveIcons(menu);
+  }
+
   function wireTenant() {
     const sw = document.getElementById('tenantSwitch');
-    if (!sw) return;
-    let i = 0;
-    sw.addEventListener('click', () => {
-      i = (i + 1) % TENANTS.length;
-      const t = TENANTS[i];
-      document.getElementById('tChip').textContent = t.short;
-      document.getElementById('tName').textContent = t.name;
-      document.getElementById('tRole').textContent = t.role;
+    const wrap = sw && sw.closest('.tenant-wrap');
+    if (!sw || !wrap) return;
+
+    const devs = allDevs();
+    // restore last-selected dev, else first
+    let activeId = devs[0] && devs[0].id;
+    try { const saved = sessionStorage.getItem('soltessa.dev'); if (saved && devs.some(d => d.id === saved)) activeId = saved; } catch (e) {}
+    const active = devs.find(d => d.id === activeId) || devs[0];
+    if (active) setActiveDev(active);
+    renderTenantMenu(activeId);
+
+    function close() { wrap.classList.remove('open'); sw.setAttribute('aria-expanded', 'false'); }
+    function toggle() {
+      const open = wrap.classList.toggle('open');
+      sw.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+
+    sw.addEventListener('click', e => { e.stopPropagation(); toggle(); });
+
+    document.getElementById('tenantMenu').addEventListener('click', e => {
+      const opt = e.target.closest('[data-dev]');
+      if (opt) {
+        const d = allDevs().find(x => x.id === opt.dataset.dev);
+        if (d) { setActiveDev(d); activeId = d.id; renderTenantMenu(activeId); }
+        close();
+        return;
+      }
+      if (e.target.closest('#onboardOpen')) { close(); openOnboard(); }
     });
-    sw.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); sw.click(); } });
+
+    document.addEventListener('click', e => { if (!wrap.contains(e.target)) close(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
+
+    // expose so the onboarding flow can refresh + select the new dev
+    wireTenant._refresh = (newId) => { activeId = newId || activeId; renderTenantMenu(activeId); };
+  }
+
+  // ---- Onboarding a new development ----
+  function buildOnboardModal() {
+    const scopeOpts = ['Flooring', 'Cabinets', 'Countertops', 'Surrounds', 'Window coverings'];
+    const segOpts = ['Entry-level / first-time buyer', 'Move-up single-family', 'Luxury single-family', 'Active-adult / 55+', 'Multifamily / attached'];
+    return `
+    <div class="modal-scrim" id="onboardScrim"></div>
+    <div class="modal" id="onboardModal" role="dialog" aria-modal="true" aria-labelledby="onboardTitle">
+      <div class="modal-head">
+        <div>
+          <div class="eyebrow">Settings · Multi-tenant <span class="prov boss">BOSS</span></div>
+          <h2 class="modal-title" id="onboardTitle">Onboard a new development</h2>
+        </div>
+        <button class="btn-icon" id="onboardClose" aria-label="Close">${icon('x')}</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-intro">Set up a new community so designers can start selection sessions against it. You can refine the plan mix, lot grid, and builder programs afterward in Lots &amp; Communities and Pricing &amp; Catalog.</p>
+
+        <div class="form-grid">
+          <label class="field span-2"><span class="field-lbl">Development name</span>
+            <input id="ob-name" placeholder="e.g. Saguaro Crossing" /></label>
+
+          <label class="field"><span class="field-lbl">Builder / client</span>
+            <input id="ob-builder" placeholder="e.g. Sunridge Communities" /></label>
+
+          <label class="field"><span class="field-lbl">City / market</span>
+            <input id="ob-city" placeholder="e.g. Henderson, NV" /></label>
+
+          <label class="field"><span class="field-lbl">Number of lots</span>
+            <input id="ob-lots" type="number" min="1" placeholder="48" /></label>
+
+          <label class="field"><span class="field-lbl">Buyer segment</span>
+            <select id="ob-seg">${segOpts.map(s => `<option>${s}</option>`).join('')}</select></label>
+
+          <label class="field"><span class="field-lbl">Price band <span class="opt">optional</span></span>
+            <input id="ob-price" placeholder="$520k–$680k" /></label>
+
+          <label class="field"><span class="field-lbl">First close target <span class="opt">optional</span></span>
+            <input id="ob-close" placeholder="e.g. Nov 2026" /></label>
+
+          <div class="field span-2"><span class="field-lbl">Scope of work</span>
+            <div class="chip-set" id="ob-scope">
+              ${scopeOpts.map((s, i) => `<button type="button" class="chip-toggle ${i < 3 ? 'on' : ''}" data-scope="${s}">${s}</button>`).join('')}
+            </div></div>
+
+          <div class="field span-2"><span class="field-lbl">Assign lead designer</span>
+            <div class="chip-set" id="ob-designer">
+              ${['Taylor Morgan', 'Dana Reyes', 'Unassigned'].map((s, i) => `<button type="button" class="chip-toggle ${i === 0 ? 'on' : ''}" data-designer="${s}">${s}</button>`).join('')}
+            </div></div>
+        </div>
+
+        <div class="notice info mt-16"><span data-ic="info"></span><div>Lots are created as <strong>Available</strong> and a starter plan-allowance template is applied. Demo only — nothing is saved to a server.</div></div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn ghost" id="onboardCancel">Cancel</button>
+        <button class="btn primary" id="onboardCreate">${icon('check')}Create development</button>
+      </div>
+    </div>`;
+  }
+
+  function openOnboard() {
+    document.getElementById('onboardScrim').classList.add('open');
+    document.getElementById('onboardModal').classList.add('open');
+    const n = document.getElementById('ob-name'); if (n) n.focus();
+  }
+  function closeOnboard() {
+    document.getElementById('onboardScrim').classList.remove('open');
+    document.getElementById('onboardModal').classList.remove('open');
+  }
+
+  function wireOnboard() {
+    if (!document.getElementById('onboardModal')) return;
+    document.getElementById('onboardClose').addEventListener('click', closeOnboard);
+    document.getElementById('onboardCancel').addEventListener('click', closeOnboard);
+    document.getElementById('onboardScrim').addEventListener('click', closeOnboard);
+
+    // chip toggles (scope = multi, designer = single)
+    document.querySelectorAll('#ob-scope .chip-toggle').forEach(c =>
+      c.addEventListener('click', () => c.classList.toggle('on')));
+    document.querySelectorAll('#ob-designer .chip-toggle').forEach(c =>
+      c.addEventListener('click', () => {
+        document.querySelectorAll('#ob-designer .chip-toggle').forEach(x => x.classList.remove('on'));
+        c.classList.add('on');
+      }));
+
+    document.getElementById('onboardCreate').addEventListener('click', () => {
+      const name = (document.getElementById('ob-name').value || '').trim();
+      if (!name) { document.getElementById('ob-name').focus(); document.getElementById('ob-name').classList.add('err'); return; }
+      const builder = (document.getElementById('ob-builder').value || '').trim() || 'New builder client';
+      const city = (document.getElementById('ob-city').value || '').trim() || 'Las Vegas, NV';
+      const lots = parseInt(document.getElementById('ob-lots').value, 10) || 24;
+      const seg = document.getElementById('ob-seg').value;
+      const price = (document.getElementById('ob-price').value || '').trim() || '—';
+      const close = (document.getElementById('ob-close').value || '').trim() || 'TBD';
+      const scope = Array.from(document.querySelectorAll('#ob-scope .chip-toggle.on')).map(c => c.dataset.scope);
+      const designer = (document.querySelector('#ob-designer .chip-toggle.on') || {}).dataset?.designer || 'Unassigned';
+      const short = name.split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase() || 'NW';
+      const accents = ['#c2703d', '#8a6d3b', '#3d6b8e', '#3f7d58', '#9a5b4a', '#5a6b8c'];
+      const id = 'NEW' + (SESSION_DEVS.length + 1);
+
+      const dev = {
+        id, short, name, builder, city,
+        role: 'New development · ' + city.split(',')[0],
+        scope: scope.length ? scope : ['Flooring'],
+        segment: seg, lots, priceBand: price, designer,
+        started: 'Jun 2026', firstClose: close, buildOut: 'TBD',
+        status: { available: lots, reserved: 0, sold: 0, production: 0, closed: 0 },
+        plans: [], accent: accents[SESSION_DEVS.length % accents.length], _new: true,
+      };
+      SESSION_DEVS.push(dev);
+      setActiveDev(dev);
+      if (wireTenant._refresh) wireTenant._refresh(id);
+      closeOnboard();
+      toast(`“${name}” created — ${lots} lots, ${scope.length || 1} scope categories. Now the active development.`);
+    });
+  }
+
+  function toast(msg) {
+    let t = document.getElementById('soltessa-toast');
+    if (!t) { t = document.createElement('div'); t.id = 'soltessa-toast'; t.className = 'toast'; document.body.appendChild(t); }
+    t.innerHTML = `${icon('check')}<span>${msg}</span>`;
+    resolveIcons(t);
+    t.classList.add('show');
+    clearTimeout(toast._t);
+    toast._t = setTimeout(() => t.classList.remove('show'), 4200);
   }
 
   function wireMenu() {
@@ -228,5 +424,5 @@
       <polyline points="${pts}" stroke="${color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" opacity=".55"/></svg>`;
   }
 
-  window.Soltessa = { mount, icon, spark, openDrawer, closeDrawers, resolveIcons, TENANTS, NAV };
+  window.Soltessa = { mount, icon, spark, openDrawer, closeDrawers, resolveIcons, openOnboard, NAV };
 })();

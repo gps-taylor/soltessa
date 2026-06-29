@@ -2,15 +2,71 @@
    Soltessa — fabricated demo data (BDG pilot tenant)
    Las Vegas flooring / cabinetry / countertop finisher.
    All names, lots, prices invented for prototype purposes.
+
+   A "development" (a.k.a. community / subdivision) is the unit
+   the top-left switcher selects. Each one has its own builder,
+   scope, lot count, plan mix, allowances, timeline, and team.
    ============================================================ */
 window.DEMO = (function () {
 
-  const communities = [
-    { id: 'SP', name: 'Sienna Pass',      builder: 'Sunridge Communities', city: 'Henderson, NV',   lots: 48, status: { available: 9,  reserved: 6,  sold: 14, production: 13, closed: 6 } },
-    { id: 'CR', name: 'Cholla Ridge',     builder: 'Mesa Verde Homes',     city: 'North Las Vegas', lots: 36, status: { available: 5,  reserved: 4,  sold: 11, production: 10, closed: 6 } },
-    { id: 'DV', name: 'Desert Vista',     builder: 'Sunridge Communities', city: 'Summerlin, NV',   lots: 60, status: { available: 18, reserved: 7,  sold: 16, production: 12, closed: 7 } },
-    { id: 'AM', name: 'Aspen Meadows',    builder: 'Mesa Verde Homes',     city: 'Las Vegas, NV',   lots: 28, status: { available: 4,  reserved: 3,  sold: 9,  production: 8,  closed: 4 } },
+  // ---- Developments (communities) — each a distinct, self-consistent set ----
+  const developments = [
+    {
+      id: 'SP', short: 'SP', name: 'Sienna Pass',
+      builder: 'Sunridge Communities', city: 'Henderson, NV',
+      role: 'Active development · Henderson',
+      scope: ['Flooring', 'Cabinets', 'Countertops'],
+      segment: 'Move-up single-family',
+      lots: 48, priceBand: '$520k–$680k',
+      designer: 'Taylor Morgan',
+      started: 'Feb 2026', firstClose: 'Jul 2026', buildOut: 'Q3 2027',
+      status: { available: 9, reserved: 6, sold: 14, production: 13, closed: 6 },
+      plans: ['P-2210', 'P-2640'],
+      accent: '#c2703d',
+    },
+    {
+      id: 'CR', short: 'CR', name: 'Cholla Ridge',
+      builder: 'Mesa Verde Homes', city: 'North Las Vegas, NV',
+      role: 'Active development · N. Las Vegas',
+      scope: ['Flooring', 'Countertops'],
+      segment: 'Entry-level / first-time buyer',
+      lots: 36, priceBand: '$390k–$470k',
+      designer: 'Dana Reyes',
+      started: 'Nov 2025', firstClose: 'May 2026', buildOut: 'Q1 2027',
+      status: { available: 5, reserved: 4, sold: 11, production: 10, closed: 6 },
+      plans: ['P-1980'],
+      accent: '#8a6d3b',
+    },
+    {
+      id: 'DV', short: 'DV', name: 'Desert Vista',
+      builder: 'Sunridge Communities', city: 'Summerlin, NV',
+      role: 'Active development · Summerlin',
+      scope: ['Flooring', 'Cabinets', 'Countertops', 'Surrounds'],
+      segment: 'Luxury single-family',
+      lots: 60, priceBand: '$840k–$1.2M',
+      designer: 'Taylor Morgan',
+      started: 'Apr 2026', firstClose: 'Nov 2026', buildOut: 'Q4 2027',
+      status: { available: 18, reserved: 7, sold: 16, production: 12, closed: 7 },
+      plans: ['P-3120'],
+      accent: '#3d6b8e',
+    },
+    {
+      id: 'AM', short: 'AM', name: 'Aspen Meadows',
+      builder: 'Mesa Verde Homes', city: 'Las Vegas, NV',
+      role: 'Active development · Las Vegas',
+      scope: ['Flooring', 'Cabinets'],
+      segment: 'Active-adult / 55+',
+      lots: 28, priceBand: '$610k–$720k',
+      designer: 'Dana Reyes',
+      started: 'Jan 2026', firstClose: 'Aug 2026', buildOut: 'Q2 2027',
+      status: { available: 4, reserved: 3, sold: 9, production: 8, closed: 4 },
+      plans: ['P-2210'],
+      accent: '#3f7d58',
+    },
   ];
+
+  // Back-compat: older pages reference DEMO.communities
+  const communities = developments;
 
   const plans = [
     { id: 'P-2210', name: 'Acacia 2210', sqft: 2210, beds: 3, baths: 2.5, community: 'Sienna Pass',
@@ -52,5 +108,5 @@ window.DEMO = (function () {
     'HW-OAK-WW': ['Natural', 'Smoked', 'Driftwood'],
   };
 
-  return { communities, plans, catalog, colorVariants };
+  return { developments, communities, plans, catalog, colorVariants };
 })();
