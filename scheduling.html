@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Purchasing · Soltessa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/app.css">
+</head>
+<body>
+<div id="app" data-page="purchasing"></div>
+<div class="drawer-scrim" id="scrim"></div>
+
+<template id="page">
+  <div class="page-head">
+    <div class="page-head-row">
+      <div>
+        <div class="eyebrow">Module 5 · Procurement</div>
+        <h1 class="page-title">Purchasing</h1>
+        <p class="page-sub">Turn approved selections into purchase orders with one click — split by supplier automatically. Re-selections after a PO exists generate matched change orders with net-option logic applied.</p>
+      </div>
+      <button class="btn primary"><span data-ic="plus"></span>Generate POs from quote</button>
+    </div>
+  </div>
+
+  <div class="kpi-grid mb-16" id="kpis"></div>
+
+  <div class="grid grid-2-1 mb-16">
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title"><span data-ic="purchasing"></span>Purchase order register</div>
+        <div class="tbl-tools"><span class="fchip active"><span data-ic="filter"></span>All</span><span class="fchip">Draft</span><span class="fchip">Issued</span><span class="fchip">Received</span></div>
+      </div>
+      <div class="card-body flush"><div class="tbl-wrap"><table class="tbl tbl-clickable">
+        <thead><tr><th>PO</th><th>Supplier</th><th>Lot / Community</th><th class="right">Amount</th><th class="right">Status</th></tr></thead>
+        <tbody id="po"></tbody>
+      </table></div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><div class="card-title"><span data-ic="edit"></span>Change orders <span class="prov conf">confirmed</span></div></div>
+      <div class="card-body">
+        <div class="notice accent mb-16"><span data-ic="info"></span><div>A buyer change after a PO exists spawns <b>both</b> a contract change order and a matched PO change order.</div></div>
+        <div class="stack gap-12" id="co"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- one-click PO generation preview -->
+  <div class="card">
+    <div class="card-head"><div class="card-title"><span data-ic="layers"></span>One-click PO generation — preview</div><span class="badge accent"><span class="d"></span>Quote Q-1039 · Lot 14</span></div>
+    <div class="card-body">
+      <p class="muted fs-13" style="margin-top:0">From a finalized selection, Soltessa drafts POs grouped by supplier with no retyping. <span class="prov conf">confirmed — "generated in minutes not hours"</span></p>
+      <div class="grid grid-3 mt-16" id="splits"></div>
+    </div>
+  </div>
+</template>
+
+<script src="assets/data/demo.js"></script>
+<script src="assets/js/app.js"></script>
+<script>
+  const S=window.Soltessa; S.mount({active:'purchasing'});
+  const kpis=[
+    {label:'Open POs',icon:'purchasing',value:'11',delta:'$214k committed',d:'flat',s:[14,12,13,11,10,11,11]},
+    {label:'Awaiting issue',icon:'file',value:'3',delta:'ready to send',d:'down',s:[6,5,4,4,3,3,3]},
+    {label:'Change orders MTD',icon:'edit',value:'8',delta:'net +$6,420',d:'up',s:[3,4,5,6,7,7,8]},
+    {label:'Received this week',icon:'box',value:'14',delta:'on schedule',d:'up',s:[8,9,11,10,12,13,14]},
+  ];
+  document.getElementById('kpis').innerHTML=kpis.map(k=>`<div class="kpi"><div class="kpi-label">${S.icon(k.icon)} ${k.label}</div><div class="kpi-value">${k.value}</div><div class="kpi-delta ${k.d}">${k.delta}</div>${S.spark(k.s)}</div>`).join('');
+
+  const po=[
+    ['PO-3318','Daltile','Lot 14 · Sienna Pass','$2,184','<span class="badge ok"><span class="d"></span>Received'],
+    ['PO-3319','Shaw','Lot 14 · Sienna Pass','$1,792','<span class="badge info"><span class="d"></span>Acknowledged'],
+    ['PO-3320','KraftMaid','Lot 14 · Sienna Pass','$8,170','<span class="badge info"><span class="d"></span>Issued'],
+    ['PO-3321','Cambria','Lot 22 · Desert Vista','$4,096','<span class="badge accent"><span class="d"></span>Draft'],
+    ['PO-3315','Mohawk','Lot 09 · Cholla Ridge','$3,240','<span class="badge ok"><span class="d"></span>Received'],
+    ['PO-3312','StoneWorks','Lot 17 · Sienna Pass','$5,880','<span class="badge info"><span class="d"></span>Issued'],
+  ];
+  document.getElementById('po').innerHTML=po.map(r=>`<tr><td class="primary t-mono">${r[0]}</td><td class="muted">${r[1]}</td><td class="muted">${r[2]}</td><td class="num tnum primary">${r[3]}</td><td class="right">${r[4]}</span></td></tr>`).join('');
+
+  const co=[
+    ['CO-58','Lot 14 · primary bath tile re-selection','+$312'],
+    ['CO-57','Lot 09 · cabinet hardware upgrade','+$840'],
+    ['CO-55','Lot 22 · carpet pad downgrade','−$120'],
+  ];
+  document.getElementById('co').innerHTML=co.map(c=>{
+    const neg=c[2].startsWith('−');
+    return `<div class="flex items-center between"><div><div class="fw-600 t-mono fs-13">${c[0]}</div><div class="muted fs-12">${c[1]}</div></div><span class="t-mono fw-600" style="color:${neg?'var(--ok)':'var(--danger)'}">${c[2]}</span></div>`;
+  }).join('');
+
+  const splits=[
+    {sup:'Daltile',cat:'Tile',items:'Carrara · Slate Grey',amt:'$2,184'},
+    {sup:'KraftMaid',cat:'Cabinets',items:'Shaker Maple White — 38 lin ft',amt:'$8,170'},
+    {sup:'Cambria',cat:'Countertops',items:'Calacatta Gold — 64 sq ft',amt:'$4,096'},
+  ];
+  document.getElementById('splits').innerHTML=splits.map(s=>`
+    <div class="card"><div class="card-body">
+      <div class="flex items-center between mb-16"><span class="badge accent"><span class="d"></span>${s.cat}</span><span class="t-mono fw-700">${s.amt}</span></div>
+      <div class="fw-600">${s.sup}</div><div class="muted fs-12" style="margin-top:3px">${s.items}</div>
+      <button class="btn sm mt-16" style="width:100%"><span data-ic="send"></span>Issue PO</button>
+    </div></div>`).join('');
+  S.resolveIcons(document.getElementById('splits'));
+</script>
+</body>
+</html>

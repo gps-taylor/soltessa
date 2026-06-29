@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Selections & Quotes · Soltessa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/app.css">
+</head>
+<body>
+<div id="app" data-page="quotes"></div>
+<div class="drawer-scrim" id="scrim"></div>
+
+<template id="page">
+  <div class="page-head">
+    <div class="page-head-row">
+      <div>
+        <div class="eyebrow">Module 4 · The transactional pipeline</div>
+        <h1 class="page-title">Selections & Quotes</h1>
+        <p class="page-sub">Turn a design session into an approved, priced commitment through accountable stages — including the price-request step that legacy tools handle implicitly.</p>
+      </div>
+      <button class="btn primary"><span data-ic="plus"></span>New price request</button>
+    </div>
+  </div>
+
+  <!-- workflow stepper -->
+  <div class="card mb-16"><div class="card-body" style="padding:16px 20px">
+    <div class="stepper">
+      <div class="step done"><span class="step-num"><span data-ic="check"></span></span><span class="step-label">Selection</span></div>
+      <div class="step-line done"></div>
+      <div class="step done"><span class="step-num"><span data-ic="check"></span></span><span class="step-label">Price Request</span></div>
+      <div class="step-line done"></div>
+      <div class="step current"><span class="step-num">3</span><span class="step-label">Quote</span></div>
+      <div class="step-line"></div>
+      <div class="step"><span class="step-num">4</span><span class="step-label">Buyer Contract</span></div>
+      <div class="step-line"></div>
+      <div class="step"><span class="step-num">5</span><span class="step-label">Purchasing</span></div>
+    </div>
+  </div></div>
+
+  <div class="grid grid-2 mb-16">
+    <!-- Price requests -->
+    <div class="card">
+      <div class="card-head">
+        <div><div class="card-title"><span data-ic="tag"></span>Price Requests <span class="prov boss">BOSS</span></div><div class="card-sub">Raised to vendors when a selection needs current or custom pricing</div></div>
+        <span class="badge warn"><span class="d"></span>2 open</span>
+      </div>
+      <div class="card-body flush"><div class="tbl-wrap"><table class="tbl tbl-clickable">
+        <thead><tr><th>Request</th><th>Vendor</th><th class="right">Status</th><th class="right">Turnaround</th></tr></thead>
+        <tbody id="pr"></tbody>
+      </table></div></div>
+    </div>
+
+    <!-- Quotes -->
+    <div class="card">
+      <div class="card-head">
+        <div><div class="card-title"><span data-ic="quotes"></span>Quotes <span class="prov boss">BOSS</span></div><div class="card-sub">Formal priced quotes issued for builder/buyer approval</div></div>
+        <span class="badge info"><span class="d"></span>$182k in flight</span>
+      </div>
+      <div class="card-body flush"><div class="tbl-wrap"><table class="tbl tbl-clickable">
+        <thead><tr><th>Quote</th><th>Lot</th><th class="right">Amount</th><th class="right">Status</th></tr></thead>
+        <tbody id="qt"></tbody>
+      </table></div></div>
+    </div>
+  </div>
+
+  <!-- Buyer selections register -->
+  <div class="card">
+    <div class="card-head">
+      <div class="card-title"><span data-ic="list"></span>Buyer Selections register</div>
+      <div class="tbl-tools">
+        <span class="fchip active"><span data-ic="filter"></span>All stages</span>
+        <span class="fchip">Sienna Pass</span>
+        <span class="fchip">Desert Vista</span>
+      </div>
+    </div>
+    <div class="card-body flush"><div class="tbl-wrap"><table class="tbl tbl-clickable">
+      <thead><tr><th>Buyer</th><th>Lot / Community</th><th>Plan</th><th>Designer</th><th>Stage</th><th class="right">Over allowance</th></tr></thead>
+      <tbody id="reg"></tbody>
+    </table></div></div>
+  </div>
+</template>
+
+<script src="assets/data/demo.js"></script>
+<script src="assets/js/app.js"></script>
+<script>
+  const S=window.Soltessa; S.mount({active:'quotes'});
+
+  const pr=[
+    ['PR-228 · Calacatta Gold quartz','Cambria','<span class="badge warn"><span class="d"></span>Awaiting','—'],
+    ['PR-231 · Custom stair-nose','Mohawk','<span class="badge warn"><span class="d"></span>Awaiting','—'],
+    ['PR-225 · Slate porcelain bath','Daltile','<span class="badge ok"><span class="d"></span>Answered','1.1 days'],
+    ['PR-219 · Espresso cabinet upgrade','KraftMaid','<span class="badge ok"><span class="d"></span>Answered','1.8 days'],
+    ['PR-212 · Granite Ubatuba','MSI','<span class="badge neutral">Expired','—'],
+  ];
+  document.getElementById('pr').innerHTML=pr.map(r=>`<tr><td class="primary">${r[0]}</td><td class="muted">${r[1]}</td><td class="right">${r[2]}</span></td><td class="num right muted">${r[3]}</td></tr>`).join('');
+
+  const qt=[
+    ['Q-1043','Lot 09 · Cholla Ridge','$48,200','<span class="badge ok"><span class="d"></span>Approved'],
+    ['Q-1041','Lot 22 · Desert Vista','$61,750','<span class="badge info"><span class="d"></span>Pending'],
+    ['Q-1039','Lot 14 · Sienna Pass','$39,480','<span class="badge info"><span class="d"></span>Pending'],
+    ['Q-1037','Lot 05 · Aspen Meadows','$32,900','<span class="badge accent"><span class="d"></span>Draft'],
+  ];
+  document.getElementById('qt').innerHTML=qt.map(r=>`<tr><td class="primary t-mono">${r[0]}</td><td class="muted">${r[1]}</td><td class="num tnum primary">${r[2]}</td><td class="right">${r[3]}</span></td></tr>`).join('');
+
+  const reg=[
+    ['Raj & Priya Patel','Lot 14 · Sienna Pass','Acacia 2210','T. Morgan','<span class="badge info"><span class="d"></span>Quote','+$1,040'],
+    ['The Nguyen family','Lot 09 · Cholla Ridge','Ocotillo 1980','D. Reyes','<span class="badge ok"><span class="d"></span>Contract','+$2,310'],
+    ['Marcus Webb','Lot 22 · Desert Vista','Mesquite 3120','T. Morgan','<span class="badge warn"><span class="d"></span>Price Request','+$4,120'],
+    ['Sofia & Aaron Klein','Lot 31 · Desert Vista','Mesquite 3120','D. Reyes','<span class="badge accent"><span class="d"></span>Selection','+$680'],
+    ['The Patterson family','Lot 05 · Aspen Meadows','Acacia 2210','T. Morgan','<span class="badge accent"><span class="d"></span>Selection','+$240'],
+    ['Elena Vasquez','Lot 17 · Sienna Pass','Sabino 2640','D. Reyes','<span class="badge neutral">PO issued','+$3,890'],
+  ];
+  document.getElementById('reg').innerHTML=reg.map(r=>{
+    const over=r[5]!=='$0';
+    return `<tr><td class="primary">${r[0]}</td><td class="muted">${r[1]}</td><td>${r[2]}</td><td class="muted">${r[3]}</td><td>${r[4]}</span></td><td class="num tnum right" style="color:${over?'var(--danger)':'var(--ink-3)'}">${r[5]}</td></tr>`;
+  }).join('');
+</script>
+</body>
+</html>

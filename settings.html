@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Settings &amp; Admin · Soltessa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/app.css">
+</head>
+<body>
+<div id="app" data-page="settings"></div>
+<div class="drawer-scrim" id="scrim"></div>
+
+<template id="page">
+  <div class="page-head">
+    <div class="page-head-row">
+      <div>
+        <div class="eyebrow">Module 8 · Administration</div>
+        <h1 class="page-title">Settings &amp; Admin</h1>
+        <p class="page-sub">Tenant and platform administration — users and roles, multi-tenant management, document and email templates, and the cross-cutting configuration the rest of Soltessa depends on.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="seg mb-16" id="tabs">
+    <button class="active" data-tab="users">Users &amp; roles</button>
+    <button data-tab="tenants">Tenants</button>
+    <button data-tab="templates">Templates</button>
+    <button data-tab="config">Configuration</button>
+  </div>
+
+  <!-- USERS & ROLES -->
+  <div data-panel="users">
+    <div class="grid grid-2-1 mb-16">
+      <div class="card">
+        <div class="card-head"><div class="card-title"><span data-ic="users"></span>Users</div>
+          <button class="btn ghost sm"><span data-ic="plus"></span>Invite user</button>
+        </div>
+        <div class="card-body flush"><div class="tbl-wrap"><table class="tbl tbl-clickable">
+          <thead><tr><th>User</th><th>Role</th><th>Tenant</th><th class="right">Last active</th><th>Status</th></tr></thead>
+          <tbody id="users"></tbody>
+        </table></div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><div class="card-title"><span data-ic="sliders"></span>Roles</div></div>
+        <div class="card-body"><div class="stack gap-12" id="roles"></div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><div class="card-title"><span data-ic="flag"></span>Security cutoff permissions</div><span class="card-sub">Who can order or change selections past a construction cutoff <span class="prov conf">confirmed</span></span></div>
+      <div class="card-body flush"><div class="tbl-wrap"><table class="tbl">
+        <thead><tr><th>Role</th><th>Order past cutoff</th><th>Override allowance</th><th>Approve change order</th><th>Issue PO</th></tr></thead>
+        <tbody id="perms"></tbody>
+      </table></div></div>
+    </div>
+  </div>
+
+  <!-- TENANTS -->
+  <div data-panel="tenants" style="display:none">
+    <div class="notice accent mb-16"><span data-ic="layers"></span><div><strong>Multi-tenant management — Phase 2.</strong> Each builder client is a tenant with its own catalog, plans, communities, programs, and branding. Phase 1 runs BDG as the single implicit tenant; the switcher in the top bar is already wired for when resale begins. <span class="prov assm">assumption</span></div></div>
+    <div class="card">
+      <div class="card-head"><div class="card-title"><span data-ic="home"></span>Tenants</div><button class="btn ghost sm"><span data-ic="plus"></span>Add tenant</button></div>
+      <div class="card-body flush"><div class="tbl-wrap"><table class="tbl tbl-clickable">
+        <thead><tr><th>Tenant</th><th>Type</th><th class="right">Communities</th><th class="right">Users</th><th class="right">Catalog SKUs</th><th>Status</th></tr></thead>
+        <tbody id="tenants"></tbody>
+      </table></div></div>
+    </div>
+
+    <div class="grid grid-2 mt-16">
+      <div class="card">
+        <div class="card-head"><div class="card-title"><span data-ic="palette"></span>Tenant branding</div><span class="card-sub">optional · per-tenant theme</span></div>
+        <div class="card-body">
+          <p class="fs-13 muted mb-16" style="line-height:1.6">A reseller client like BDG can see its own logo and colors inside Soltessa — distinct from Soltessa's own product identity.</p>
+          <dl class="meta">
+            <dt>Logo</dt><dd>bdg-mark.svg · <span class="muted">uploaded</span></dd>
+            <dt>Primary</dt><dd><span class="swatch swatch-sm" style="background:#1f5c4a"></span> #1F5C4A</dd>
+            <dt>Accent</dt><dd><span class="swatch swatch-sm" style="background:#c2703d"></span> #C2703D</dd>
+            <dt>Subdomain</dt><dd class="t-mono">bdg.soltessa.app</dd>
+          </dl>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div class="card-title"><span data-ic="link"></span>Integrations</div></div>
+        <div class="card-body"><div class="stack gap-12" id="integrations"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TEMPLATES -->
+  <div data-panel="templates" style="display:none">
+    <div class="grid grid-2 mb-16">
+      <div class="card">
+        <div class="card-head"><div class="card-title"><span data-ic="file"></span>Document templates</div><span class="card-sub">Editable boilerplate with merge fields</span></div>
+        <div class="card-body flush"><div class="tbl-wrap"><table class="tbl tbl-clickable">
+          <thead><tr><th>Template</th><th>Type</th><th class="right">Updated</th></tr></thead>
+          <tbody id="doctpl"></tbody>
+        </table></div></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div class="card-title"><span data-ic="send"></span>Email templates <span class="prov boss">BOSS</span></div><span class="card-sub">Templated transactional comms</span></div>
+        <div class="card-body flush"><div class="tbl-wrap"><table class="tbl tbl-clickable">
+          <thead><tr><th>Template</th><th>Trigger</th><th>Status</th></tr></thead>
+          <tbody id="emailtpl"></tbody>
+        </table></div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div class="card-title"><span data-ic="copy"></span>Merge fields</div><span class="card-sub">Auto-filled from buyer / lot / selection data</span></div>
+      <div class="card-body"><div class="flex gap-8 wrap" id="mergefields"></div></div>
+    </div>
+  </div>
+
+  <!-- CONFIGURATION -->
+  <div data-panel="config" style="display:none">
+    <div class="grid grid-2 mb-16">
+      <div class="card">
+        <div class="card-head"><div class="card-title"><span data-ic="ruler"></span>Units of measure</div><span class="card-sub">Per category — drives takeoff math everywhere <span class="prov conf">confirmed</span></span></div>
+        <div class="card-body flush"><div class="tbl-wrap"><table class="tbl">
+          <thead><tr><th>Category</th><th>Unit</th><th>Ordered in</th></tr></thead>
+          <tbody id="uom"></tbody>
+        </table></div></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div class="card-title"><span data-ic="sliders"></span>Selection &amp; pricing rules</div></div>
+        <div class="card-body"><div class="stack gap-14" id="rules"></div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div class="card-title"><span data-ic="box"></span>Setup entry points</div><span class="card-sub">Catalog, plans, communities, and programs are configured per tenant</span></div>
+      <div class="card-body"><div class="grid grid-3" id="entrypoints"></div></div>
+    </div>
+  </div>
+</template>
+
+<script src="assets/data/demo.js"></script>
+<script src="assets/js/app.js"></script>
+<script>
+  const S=window.Soltessa; S.mount({active:'settings'});
+
+  const users=[
+    ['Taylor Morgan','Design Center Lead','BDG','Today','<span class="badge ok"><span class="d"></span>Active'],
+    ['Dana Reyes','Designer','BDG','2h ago','<span class="badge ok"><span class="d"></span>Active'],
+    ['Marcus Hill','Purchasing','BDG','Yesterday','<span class="badge ok"><span class="d"></span>Active'],
+    ['Priya Shah','Scheduler','BDG','3d ago','<span class="badge ok"><span class="d"></span>Active'],
+    ['Sam Okafor','Tenant Admin','BDG','1w ago','<span class="badge warn"><span class="d"></span>Invited'],
+  ];
+  document.getElementById('users').innerHTML=users.map(u=>`<tr><td class="cell-lead"><span class="avatar sm">${u[0].split(' ').map(n=>n[0]).join('')}</span><span class="primary">${u[0]}</span></td><td>${u[1]}</td><td class="muted">${u[2]}</td><td class="num right muted">${u[3]}</td><td>${u[4]}</span></td></tr>`).join('');
+
+  const roles=[
+    ['Tenant Admin','Full tenant config + users','1'],
+    ['Design Center Lead','Selections, quotes, override allowance','1'],
+    ['Designer','Selections + price requests','4'],
+    ['Purchasing','POs, change orders, suppliers','2'],
+    ['Scheduler','Install schedule + cutoffs','2'],
+    ['Sales','Buyers, deposits, agreements','3'],
+  ];
+  document.getElementById('roles').innerHTML=roles.map(r=>`<div class="flex between items-center"><div><div class="fw-600 fs-13">${r[0]}</div><div class="muted fs-12">${r[1]}</div></div><span class="tag">${r[2]} ${r[2]==='1'?'user':'users'}</span></div>`).join('');
+
+  const perms=[
+    ['Tenant Admin','✓','✓','✓','✓'],
+    ['Design Center Lead','✓','✓','✓','—'],
+    ['Designer','—','—','—','—'],
+    ['Purchasing','✓','—','✓','✓'],
+    ['Scheduler','—','—','—','—'],
+  ];
+  const yn=v=>v==='✓'?'<span style="color:var(--ok);font-weight:600">✓</span>':'<span class="muted">—</span>';
+  document.getElementById('perms').innerHTML=perms.map(p=>`<tr><td class="primary">${p[0]}</td><td>${yn(p[1])}</td><td>${yn(p[2])}</td><td>${yn(p[3])}</td><td>${yn(p[4])}</td></tr>`).join('');
+
+  const tenants=[
+    ['Builders Design Group','Pilot · finisher','4','5','248','<span class="badge accent"><span class="d"></span>Active — Phase 1'],
+    ['Sunridge Communities','Builder','2','0','—','<span class="badge neutral"><span class="d"></span>Provisioned'],
+    ['Mesa Verde Homes','Builder','2','0','—','<span class="badge neutral"><span class="d"></span>Provisioned'],
+  ];
+  document.getElementById('tenants').innerHTML=tenants.map(t=>`<tr><td class="primary">${t[0]}</td><td><span class="tag">${t[1]}</span></td><td class="num right">${t[2]}</td><td class="num right">${t[3]}</td><td class="num right muted">${t[4]}</td><td>${t[5]}</span></td></tr>`).join('');
+
+  const integ=[['QuickBooks Online','Accounting sync','ok','Connected'],['Hyphen / IBSWIN','Legacy migration','warn','Import only'],['DocuSign','E-signature','ok','Connected'],['Twilio','SMS reminders','neutral','Not set up']];
+  document.getElementById('integrations').innerHTML=integ.map(i=>`<div class="flex between items-center"><div><div class="fw-600 fs-13">${i[0]}</div><div class="muted fs-12">${i[1]}</div></div><span class="badge ${i[2]}"><span class="d"></span>${i[3]}</span></div>`).join('');
+
+  const doctpl=[['Buyer Contract','Contract','Jun 12'],['Sales Order','Order','Jun 12'],['Purchase Order','PO','May 30'],['Quote','Quote','Jun 20'],['Option Selection Agreement','Agreement','Jun 24']];
+  document.getElementById('doctpl').innerHTML=doctpl.map(d=>`<tr><td class="primary">${d[0]}</td><td><span class="tag">${d[1]}</span></td><td class="num right muted">${d[2]}</td></tr>`).join('');
+
+  const emailtpl=[['Price request ready','Quote approved','<span class="badge ok"><span class="d"></span>On'],['Quote issued','Quote sent to buyer','<span class="badge ok"><span class="d"></span>On'],['Selection cutoff warning','7 days before cutoff','<span class="badge ok"><span class="d"></span>On'],['Appointment reminder','24h before','<span class="badge neutral"><span class="d"></span>Off']];
+  document.getElementById('emailtpl').innerHTML=emailtpl.map(e=>`<tr><td class="primary">${e[0]}</td><td class="muted">${e[1]}</td><td>${e[2]}</span></td></tr>`).join('');
+
+  const mf=['{{buyer.name}}','{{lot.number}}','{{lot.community}}','{{plan.name}}','{{selection.total}}','{{allowance.flooring}}','{{net_over_standard}}','{{quote.number}}','{{cutoff.date}}','{{designer.name}}'];
+  document.getElementById('mergefields').innerHTML=mf.map(m=>`<span class="tag t-mono">${m}</span>`).join('');
+
+  const uom=[['Carpet','Square yard','sq yd'],['Tile','Square foot','sq ft'],['Hardwood','Square foot','sq ft'],['Stone','Square foot','sq ft'],['Countertops','Square foot','sq ft'],['Cabinets','Unit / lineal foot','unit · lin ft']];
+  document.getElementById('uom').innerHTML=uom.map(u=>`<tr><td class="primary">${u[0]}</td><td>${u[1]}</td><td class="t-mono muted">${u[2]}</td></tr>`).join('');
+
+  const rules=[
+    ['Net-option upgrade pricing','Buyer pays net over standard, not gross','ok','On'],
+    ['Waste factor — tile','Default 10% added to takeoff','info','10%'],
+    ['Waste factor — flooring','Default 8% added to takeoff','info','8%'],
+    ['Price cascade','Cost → allowance → sell auto-recompute','ok','On'],
+    ['Allowance overage approval','Required above $2,500 net','warn','$2,500'],
+  ];
+  document.getElementById('rules').innerHTML=rules.map(r=>`<div class="flex between items-center"><div><div class="fw-600 fs-13">${r[0]}</div><div class="muted fs-12">${r[1]}</div></div><span class="badge ${r[2]}"><span class="d"></span>${r[3]}</span></div>`).join('');
+
+  const ep=[['Catalog','catalog','248 SKUs'],['Plans','layers','4 plans'],['Communities','map','4 active'],['Builder Programs','grid','availability matrix'],['Suppliers','truck','6 suppliers'],['Installers','users','4 crews']];
+  document.getElementById('entrypoints').innerHTML=ep.map(e=>`<a class="card-mini"><span class="card-mini-ic">${S.icon(e[1])}</span><div><div class="fw-600 fs-13">${e[0]}</div><div class="muted fs-12">${e[2]}</div></div><span class="card-mini-arrow">${S.icon('chevronR')}</span></a>`).join('');
+
+  // tabs
+  document.querySelectorAll('#tabs button').forEach(b=>b.addEventListener('click',()=>{
+    document.querySelectorAll('#tabs button').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    const t=b.dataset.tab;
+    document.querySelectorAll('[data-panel]').forEach(p=>p.style.display=p.dataset.panel===t?'':'none');
+  }));
+</script>
+</body>
+</html>
