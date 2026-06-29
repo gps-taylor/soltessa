@@ -35,10 +35,10 @@
 
   <!-- PRICE BOOK -->
   <div data-panel="catalog">
-    <div class="filterbar">
-      <span class="fchip active"><span data-ic="grid"></span>All categories</span>
-      <span class="fchip">Hardwood</span><span class="fchip">Tile</span><span class="fchip">Carpet</span>
-      <span class="fchip">Cabinets</span><span class="fchip">Countertops</span>
+    <div class="filterbar" data-target="#cat" data-filter-scope>
+      <span class="fchip active" data-match="all"><span data-ic="grid"></span>All categories</span>
+      <span class="fchip" data-match="Hardwood">Hardwood</span><span class="fchip" data-match="Tile">Tile</span><span class="fchip" data-match="Carpet">Carpet</span>
+      <span class="fchip" data-match="Cabinets">Cabinets</span><span class="fchip" data-match="Countertops">Countertops</span>
       <span style="flex:1"></span>
       <span class="muted fs-12">Showing 12 of 312 SKUs</span>
     </div>
@@ -140,6 +140,84 @@
     const r=parseFloat(i[2]); const cls=r>3?'danger':r>2?'warn':'ok';
     return `<tr><td class="primary">${i[0]}</td><td class="muted">${i[1]}</td><td class="right"><span class="badge ${cls}"><span class="d"></span>${i[2]}</span></td></tr>`;
   }).join('');
+
+  // ============ INTERACTIVITY ============
+  const hb = document.querySelectorAll('.page-head .btn');
+  // Markup vs margin reference
+  hb[0].addEventListener('click', () => S.modal({ eyebrow:'Pricing reference', title:'Markup vs. margin', size:'sm',
+    body:`<p class="modal-intro">These are distinct calculations. Markup is over <b>cost</b>; margin is of <b>sell price</b>.</p>
+      <div class="meta-list">
+        <div class="ml-row"><span class="ml-k">Cost</span><span class="ml-v t-mono">$4.85</span></div>
+        <div class="ml-row"><span class="ml-k">Sell</span><span class="ml-v t-mono">$7.95</span></div>
+        <div class="ml-row"><span class="ml-k">Markup (over cost)</span><span class="ml-v t-mono" style="color:var(--accent-d)">+63.9%</span></div>
+        <div class="ml-row"><span class="ml-k">Margin (of sell)</span><span class="ml-v t-mono" style="color:var(--ok)">39.0%</span></div>
+      </div>` }));
+  // Add product
+  hb[1].addEventListener('click', () => S.modal({ eyebrow:'Price book', title:'Add product',
+    body:`<div class="form-grid">
+      <label class="field span-2"><span class="field-lbl">Product name</span><input data-field="name" placeholder="e.g. European Oak — Matte"/></label>
+      <label class="field"><span class="field-lbl">Category</span><select data-field="cat"><option>Hardwood</option><option>Tile</option><option>Carpet</option><option>LVP</option><option>Cabinets</option><option>Countertops</option></select></label>
+      <label class="field"><span class="field-lbl">Supplier</span><input data-field="sup" placeholder="e.g. Mohawk"/></label>
+      <label class="field"><span class="field-lbl">Cost</span><input data-field="cost" type="number" placeholder="4.85"/></label>
+      <label class="field"><span class="field-lbl">Sell</span><input data-field="sell" type="number" placeholder="7.95"/></label>
+      <label class="field"><span class="field-lbl">Unit</span><select data-field="unit"><option>sq ft</option><option>sq yd</option><option>lin ft</option><option>unit</option></select></label>
+      <label class="field"><span class="field-lbl">Allowance value</span><input data-field="allow" type="number" placeholder="6.20"/></label>
+    </div>`,
+    actions:[{label:'Cancel',kind:'ghost'},{label:'Add to price book',kind:'primary',icon:'plus',onClick:(m)=>{const f=S.readForm(m);S.toast(`“${f.name||'New product'}” added to the price book (demo).`);}}] }));
+
+  // price-book rows → edit price
+  document.querySelectorAll('#cat tr').forEach((tr,i)=>tr.addEventListener('click',()=>{
+    const c = DEMO.catalog[i];
+    S.modal({ eyebrow:`${c.sku} · ${c.cat}`, title:c.name,
+      body:`<p class="modal-intro">Edit pricing. Changes cascade to every open selection, quote, and PO using this item.</p>
+        <div class="form-grid">
+          <label class="field"><span class="field-lbl">Cost (${c.unit})</span><input data-field="cost" type="number" value="${c.cost}"/></label>
+          <label class="field"><span class="field-lbl">Allowance value</span><input data-field="allow" type="number" value="${c.allow}"/></label>
+          <label class="field"><span class="field-lbl">Sell price</span><input data-field="sell" type="number" value="${c.sell}"/></label>
+          <label class="field"><span class="field-lbl">Supplier</span><input data-field="sup" value="${c.supplier}"/></label>
+        </div>
+        <div class="notice info mt-16"><span data-ic="info"></span><div>Current markup over cost: <b>+${Math.round(((c.sell-c.cost)/c.cost)*100)}%</b>.</div></div>`,
+      actions:[{label:'Cancel',kind:'ghost'},{label:'Save & cascade',kind:'primary',icon:'check',onClick:()=>S.toast(`${c.name} pricing updated — cascaded to all open records (demo).`)}] });
+  }));
+
+  // program rows → toggle availability
+  document.querySelectorAll('#prog tr').forEach((tr,i)=>{ tr.classList.add('tbl-clickable'); tr.addEventListener('click',()=>{
+    const p = prog[i];
+    S.modal({ eyebrow:'Builder program · availability', title:p[0], size:'sm',
+      body:`<p class="modal-intro">Toggle which neighborhoods offer this product and set program price.</p>
+        <div class="form-grid">
+          <div class="field span-2"><span class="field-lbl">Offered in</span><div class="chip-set" data-field="hoods"><button class="chip-toggle ${p[1]==='✓'?'on':''}" data-val="Sienna Pass">Sienna Pass</button><button class="chip-toggle ${p[2]==='✓'?'on':''}" data-val="Desert Vista">Desert Vista</button><button class="chip-toggle" data-val="Cholla Ridge">Cholla Ridge</button><button class="chip-toggle" data-val="Aspen Meadows">Aspen Meadows</button></div></div>
+          <label class="field span-2"><span class="field-lbl">Program price</span><input data-field="price" value="${p[3]}"/></label>
+        </div>`,
+      actions:[{label:'Cancel',kind:'ghost'},{label:'Save program',kind:'primary',icon:'check',onClick:()=>S.toast(`Availability updated for ${p[0]} (demo).`)}] });
+  });});
+
+  // supplier rows → detail
+  document.querySelectorAll('#sup tr').forEach((tr,i)=>tr.addEventListener('click',()=>{
+    const s = sup[i];
+    S.drawer({ eyebrow:'Supplier record', title:s[0], width:480,
+      body:`<div class="meta-list mb-16">
+        <div class="ml-row"><span class="ml-k">Payment terms</span><span class="ml-v">${s[1]}</span></div>
+        <div class="ml-row"><span class="ml-k">Insurance</span><span class="ml-v">${s[2]}</span></div>
+        <div class="ml-row"><span class="ml-k">Open POs</span><span class="ml-v t-mono">${2+i}</span></div>
+        <div class="ml-row"><span class="ml-k">Spend YTD</span><span class="ml-v t-mono">$${(40+i*12).toLocaleString()}k</span></div>
+      </div>
+      <div class="flex gap-8"><button class="btn primary sm" data-toast="Insurance reminder sent (demo).">${S.icon('send')}Request COI</button><button class="btn ghost sm" data-drawer-close>Close</button></div>` });
+  }));
+
+  // installer rows → detail
+  document.querySelectorAll('#inst tr').forEach((tr,i)=>tr.addEventListener('click',()=>{
+    const x = inst[i];
+    S.drawer({ eyebrow:'Installer / subcontractor', title:x[0], width:480,
+      body:`<div class="meta-list mb-16">
+        <div class="ml-row"><span class="ml-k">Categories</span><span class="ml-v">${x[1]}</span></div>
+        <div class="ml-row"><span class="ml-k">Callback rate (90d)</span><span class="ml-v t-mono">${x[2]}</span></div>
+        <div class="ml-row"><span class="ml-k">Jobs assigned</span><span class="ml-v t-mono">${18+i*6}</span></div>
+        <div class="ml-row"><span class="ml-k">Avg close time</span><span class="ml-v t-mono">${(3.6+i).toFixed(1)}d</span></div>
+      </div>
+      <div class="notice ${parseFloat(x[2])>3?'warn':'info'}"><span data-ic="info"></span><div>Performance feeds bid awarding (Purchasing) and supplier records.</div></div>
+      <div class="flex gap-8 mt-16"><button class="btn ghost sm" data-drawer-close>Close</button></div>` });
+  }));
 
   // tabs
   document.querySelectorAll('#tabs button').forEach(b=>b.addEventListener('click',()=>{

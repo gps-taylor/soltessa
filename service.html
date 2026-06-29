@@ -143,12 +143,57 @@
     ['Vegas Cabinet Co','Cabinets','21','1','4.8%','3.6d','<span class="badge ok"><span class="d"></span>Good'],
     ['StoneWorks','Countertops','18','1','5.6%','6.0d','<span class="badge warn"><span class="d"></span>Watch'],
   ];
-  document.getElementById('perf').innerHTML=perf.map(p=>`<tr><td class="primary">${p[0]}</td><td><span class="tag">${p[1]}</span></td><td class="num right">${p[2]}</td><td class="num right">${p[3]}</td><td class="num right fw-600" style="color:${parseFloat(p[4])>10?'var(--danger)':'var(--ink)'}">${p[4]}</td><td class="num right muted">${p[5]}</td><td>${p[6]}</span></td></tr>`).join('');
+  document.getElementById('perf').innerHTML=perf.map(p=>`<tr data-pidx="${perf.indexOf(p)}"><td class="primary">${p[0]}</td><td><span class="tag">${p[1]}</span></td><td class="num right">${p[2]}</td><td class="num right">${p[3]}</td><td class="num right fw-600" style="color:${parseFloat(p[4])>10?'var(--danger)':'var(--ink)'}">${p[4]}</td><td class="num right muted">${p[5]}</td><td>${p[6]}</span></td></tr>`).join('');
+
+  // ============ INTERACTIVITY ============
+  // Log service request
+  document.querySelector('.page-head .btn.primary').addEventListener('click', () => S.modal({
+    eyebrow:'Customer service', title:'Log a service request',
+    body:`<div class="form-grid">
+      <label class="field"><span class="field-lbl">Homeowner</span><input data-field="home" placeholder="e.g. The Cortez family"/></label>
+      <label class="field"><span class="field-lbl">Lot</span><input data-field="lot" placeholder="Lot 02 · Sienna Pass"/></label>
+      <label class="field"><span class="field-lbl">Call type</span><select data-field="cat"><option>Tile & grout</option><option>Cabinetry</option><option>Flooring — plank</option><option>Carpet</option><option>Countertops</option></select></label>
+      <label class="field"><span class="field-lbl">Assign to</span><select data-field="sub"><option>TileRight</option><option>Premier Floors</option><option>Vegas Cabinet Co</option><option>StoneWorks</option></select></label>
+      <label class="field span-2"><span class="field-lbl">Description</span><input data-field="desc" placeholder="Describe the issue…"/></label>
+    </div>`,
+    actions:[{label:'Cancel',kind:'ghost'},{label:'Create work order',kind:'primary',icon:'check',onClick:(m)=>{const f=S.readForm(m);S.toast(`Work order created for ${f.home||'homeowner'} — assigned to ${f.sub} (demo).`);}}] }));
+
+  // perf rows → detail
+  document.querySelectorAll('#perf tr').forEach((tr,i)=>{ tr.classList.add('tbl-clickable'); tr.addEventListener('click',()=>{
+    const p=perf[i]; const flag=parseFloat(p[4])>10;
+    S.drawer({ eyebrow:'Subcontractor performance', title:p[0], width:480,
+      body:`<div class="meta-list mb-16">
+        <div class="ml-row"><span class="ml-k">Category</span><span class="ml-v"><span class="tag">${p[1]}</span></span></div>
+        <div class="ml-row"><span class="ml-k">Jobs (90d)</span><span class="ml-v t-mono">${p[2]}</span></div>
+        <div class="ml-row"><span class="ml-k">Callbacks</span><span class="ml-v t-mono">${p[3]}</span></div>
+        <div class="ml-row"><span class="ml-k">Callback rate</span><span class="ml-v t-mono" style="color:${flag?'var(--danger)':'var(--ink)'}">${p[4]}</span></div>
+        <div class="ml-row"><span class="ml-k">Avg close</span><span class="ml-v t-mono">${p[5]}</span></div>
+      </div>
+      <div class="notice ${flag?'danger':'info'}" style="${flag?'background:var(--danger-bg);border-color:#e8c4bf;color:var(--danger)':''}"><span data-ic="${flag?'alert':'info'}"></span><div>${flag?'Callback rate is an outlier — flag for review and weight down in bid awarding.':'Performance within range. Feeds bid awarding and supplier records.'}</div></div>
+      <div class="flex gap-8 mt-16">${flag?'<button class="btn primary sm" data-toast="Flagged for review (demo)." style="background:var(--danger);border-color:var(--danger)">'+S.icon('flag')+'Flag for review</button>':''}<button class="btn ghost sm" data-drawer-close>Close</button></div>` });
+  });});
+
+  // homeowner rows → service record
+  document.querySelectorAll('#homes tr').forEach((tr)=>tr.addEventListener('click',()=>{
+    const home = tr.querySelector('.primary').textContent;
+    const lot = tr.children[1].textContent;
+    S.drawer({ eyebrow:'Homeowner / lot service record', title:home, width:500,
+      body:`<div class="meta-list mb-16">
+        <div class="ml-row"><span class="ml-k">Lot / Plan</span><span class="ml-v">${lot}</span></div>
+        <div class="ml-row"><span class="ml-k">Coverage</span><span class="ml-v">${tr.children[5].textContent.trim()}</span></div>
+        <div class="ml-row"><span class="ml-k">Requests to date</span><span class="ml-v t-mono">${tr.children[4].textContent.trim()}</span></div>
+      </div>
+      <div class="notice info"><span data-ic="info"></span><div>One master record per home for post-close reference — links every service ticket, PO, and warranty item.</div></div>
+      <div class="flex gap-8 mt-16"><button class="btn primary sm" data-toast="New request logged (demo).">${S.icon('plus')}Log request</button><button class="btn ghost sm" data-drawer-close>Close</button></div>` });
+  }));
 
   // work order drawer detail
   const woData={
-    'WO-1042':{home:'Raj &amp; Priya Patel',lot:'Lot 14 · Sienna Pass',plan:'Acacia 2210',cat:'Tile & grout',sub:'TileRight',issued:'Jun 26, 2026',age:'3 days',status:'Open',
-      desc:'Hairline grout cracking along primary bath shower curb. Reported at 11-month walkthrough.',po:'PO-3319 (tile install)'},
+    'WO-1042':{home:'Raj &amp; Priya Patel',lot:'Lot 14 · Sienna Pass',plan:'Acacia 2210',cat:'Tile &amp; grout',sub:'TileRight',issued:'Jun 26, 2026',age:'3 days',status:'Open',desc:'Hairline grout cracking along primary bath shower curb. Reported at 11-month walkthrough.',po:'PO-3319 (tile install)'},
+    'WO-1039':{home:'The Cortez family',lot:'Lot 02 · Sienna Pass',plan:'Acacia 2210',cat:'Cabinetry',sub:'Vegas Cabinet Co',issued:'Jun 24, 2026',age:'5 days',status:'Scheduled',desc:'Upper cabinet door misaligned in kitchen; hinge adjustment needed.',po:'PO-3320 (cabinet set)'},
+    'WO-1036':{home:'Elena Vasquez',lot:'Lot 17 · Desert Vista',plan:'Sabino 2640',cat:'Flooring — plank',sub:'Premier Floors',issued:'Jun 21, 2026',age:'8 days',status:'In progress',desc:'LVP plank lifting near patio threshold; re-adhere and inspect subfloor.',po:'PO-3312 (flooring)'},
+    'WO-1031':{home:'Marcus Webb',lot:'Lot 22 · Cholla Ridge',plan:'Mesquite 3120',cat:'Countertops',sub:'StoneWorks',issued:'Jun 17, 2026',age:'12 days',status:'Awaiting parts',desc:'Visible seam separation at island; replacement slab section on order.',po:'PO-3315 (countertops)'},
+    'WO-1028':{home:'The Nguyen family',lot:'Lot 09 · Desert Vista',plan:'Ocotillo 1980',cat:'Carpet',sub:'Premier Floors',issued:'Jun 27, 2026',age:'2 days',status:'Open',desc:'Carpet seam lifting in primary bedroom; re-seam required.',po:'PO-3315 (carpet)'},
   };
   function fillWO(id){
     const w=woData[id]||woData['WO-1042'];
@@ -166,12 +211,12 @@
         <dt>Subcontractor</dt><dd>${w.sub}</dd>
         <dt>Source PO</dt><dd>${w.po}</dd>
         <dt>Issued</dt><dd>${w.issued} · <span class="fw-600">${w.age}</span></dd>
-        <dt>Status</dt><dd><span class="badge danger"><span class="d"></span>${w.status}</span></dd>
+        <dt>Status</dt><dd><span class="badge ${ {Open:'danger','Scheduled':'warn','In progress':'warn','Awaiting parts':'info'}[w.status]||'danger' }"><span class="d"></span>${w.status}</span></dd>
       </dl>
       <div class="divider"><span class="lbl">Request detail</span><span class="line"></span></div>
       <p class="fs-13 muted mb-16" style="line-height:1.6">${w.desc}</p>
       <div class="notice info"><span data-ic="info"></span><div>Work order generated to <strong>${w.sub}</strong> from the homeowner record — no manual re-keying. Completion tracked back to subcontractor performance.</div></div>
-      <div class="flex gap-8 mt-16"><button class="btn primary"><span data-ic="send"></span>Send to sub</button><button class="btn ghost"><span data-ic="check"></span>Mark resolved</button></div>`;
+      <div class="flex gap-8 mt-16"><button class="btn primary" data-toast="Work order sent to ${w.sub} (demo)."><span data-ic="send"></span>Send to sub</button><button class="btn ghost" data-toast="${id} marked resolved (demo)." data-drawer-close><span data-ic="check"></span>Mark resolved</button></div>`;
     S.resolveIcons(document.getElementById('woBody'));
   }
 

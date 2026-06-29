@@ -161,6 +161,8 @@
     wireOnboard();
     wireMenu();
     wireDrawers();
+    wireActions();
+    wireSearch();
   }
 
   // any element with data-ic="name" gets the svg injected
@@ -385,6 +387,168 @@
     if (t && rail) t.addEventListener('click', () => rail.classList.toggle('open'));
   }
 
+  // ============================================================
+  //  Generic interaction layer (used by every page)
+  // ============================================================
+
+  // A reusable modal. opts: { title, eyebrow, body, size, actions:[{label,kind,onClick,close}] }
+  function modal(opts) {
+    opts = opts || {};
+    let scrim = document.getElementById('genModalScrim');
+    let m = document.getElementById('genModal');
+    if (!scrim) {
+      document.body.insertAdjacentHTML('beforeend',
+        '<div class="modal-scrim" id="genModalScrim"></div><div class="modal" id="genModal" role="dialog" aria-modal="true"></div>');
+      scrim = document.getElementById('genModalScrim');
+      m = document.getElementById('genModal');
+      scrim.addEventListener('click', closeModal);
+      document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+    }
+    m.style.width = opts.size === 'lg' ? 'min(760px,95vw)' : opts.size === 'sm' ? 'min(440px,94vw)' : 'min(620px,94vw)';
+    const acts = (opts.actions || [{ label: 'Close', kind: 'ghost', close: true }]).map((a, i) =>
+      `<button class="btn ${a.kind || 'ghost'}" data-act="${i}">${a.icon ? icon(a.icon) : ''}${a.label}</button>`).join('');
+    m.innerHTML = `
+      <div class="modal-head">
+        <div>${opts.eyebrow ? `<div class="eyebrow">${opts.eyebrow}</div>` : ''}<h2 class="modal-title">${opts.title || ''}</h2></div>
+        <button class="btn-icon" id="genModalClose" aria-label="Close">${icon('x')}</button>
+      </div>
+      <div class="modal-body">${opts.body || ''}</div>
+      ${(opts.actions !== null) ? `<div class="modal-foot">${acts}</div>` : ''}`;
+    resolveIcons(m);
+    document.getElementById('genModalClose').addEventListener('click', closeModal);
+    (opts.actions || []).forEach((a, i) => {
+      const btn = m.querySelector(`[data-act="${i}"]`);
+      if (btn) btn.addEventListener('click', () => {
+        let keep = false;
+        if (a.onClick) keep = a.onClick(m) === false ? false : keep;
+        if (a.close !== false) closeModal();
+      });
+    });
+    requestAnimationFrame(() => { scrim.classList.add('open'); m.classList.add('open'); });
+    const f = m.querySelector('input,select,textarea,button.btn'); if (f && opts.focus !== false) setTimeout(() => f.focus && f.focus(), 60);
+    return m;
+  }
+  function closeModal() {
+    const s = document.getElementById('genModalScrim'), m = document.getElementById('genModal');
+    if (s) s.classList.remove('open'); if (m) m.classList.remove('open');
+  }
+
+  // Fill the shared side drawer with arbitrary content and open it.
+  function drawer(opts) {
+    opts = opts || {};
+    let d = document.getElementById('genDrawer');
+    if (!d) {
+      document.body.insertAdjacentHTML('beforeend',
+        `<div class="drawer" id="genDrawer" style="width:${opts.width || 540}px"><div class="drawer-head"><div id="genDrawerHead"></div><button class="btn-icon" data-drawer-close aria-label="Close">${icon('x')}</button></div><div class="drawer-body" id="genDrawerBody"></div></div>`);
+      d = document.getElementById('genDrawer');
+      resolveIcons(d);
+    }
+    d.style.width = (opts.width || 540) + 'px';
+    document.getElementById('genDrawerHead').innerHTML =
+      `${opts.eyebrow ? `<div class="eyebrow">${opts.eyebrow}</div>` : ''}<div class="drawer-title">${opts.title || ''}</div>`;
+    document.getElementById('genDrawerBody').innerHTML = opts.body || '';
+    resolveIcons(d);
+    openDrawer('genDrawer');
+    return d;
+  }
+
+  // confirm dialog → resolves via callback
+  function confirmAction(opts) {
+    modal({
+      title: opts.title || 'Confirm', eyebrow: opts.eyebrow, size: 'sm',
+      body: `<p class="modal-intro" style="margin:0">${opts.message || 'Are you sure?'}</p>`,
+      actions: [
+        { label: opts.cancelLabel || 'Cancel', kind: 'ghost' },
+        { label: opts.confirmLabel || 'Confirm', kind: opts.danger ? 'danger' : 'primary', icon: opts.icon || 'check', onClick: () => { if (opts.onConfirm) opts.onConfirm(); } },
+      ],
+    });
+  }
+
+  // read all [data-field] inputs inside a container into {key:value}
+  function readForm(scope) {
+    const out = {};
+    scope.querySelectorAll('[data-field]').forEach(el => {
+      if (el.type === 'checkbox') out[el.dataset.field] = el.checked;
+      else out[el.dataset.field] = el.value;
+    });
+    scope.querySelectorAll('.chip-set[data-field]').forEach(cs => {
+      out[cs.dataset.field] = Array.from(cs.querySelectorAll('.chip-toggle.on')).map(c => c.dataset.val || c.textContent.trim());
+    });
+    return out;
+  }
+
+  // Generic page wiring: declarative attributes any page can use.
+  function wireActions() {
+    document.body.addEventListener('click', e => {
+      // simple toast feedback
+      const t = e.target.closest('[data-toast]');
+      if (t) { toast(t.getAttribute('data-toast')); }
+
+      // chip-set toggles (multi by default; single if data-single)
+      const chip = e.target.closest('.chip-toggle');
+      if (chip && chip.closest('.chip-set')) {
+        const set = chip.closest('.chip-set');
+        if (set.hasAttribute('data-single')) { set.querySelectorAll('.chip-toggle').forEach(c => c.classList.remove('on')); chip.classList.add('on'); }
+        else chip.classList.toggle('on');
+      }
+
+      // filter chips (.fchip) — visual active state within a group
+      const fc = e.target.closest('.fchip');
+      if (fc && fc.parentElement) {
+        const grp = fc.parentElement;
+        if (!fc.hasAttribute('data-multi')) grp.querySelectorAll('.fchip').forEach(x => x.classList.remove('active'));
+        fc.classList.toggle('active');
+        applyFilter(fc.closest('[data-filter-scope]') || document, grp);
+      }
+
+      // segmented control (.seg) generic — toggles [data-view] panels by data-tab
+      const segBtn = e.target.closest('.seg button[data-tab]');
+      if (segBtn) {
+        const seg = segBtn.closest('.seg');
+        seg.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+        segBtn.classList.add('active');
+        const tab = segBtn.dataset.tab;
+        // scope to the nearest container holding the panels, else document
+        const host = document;
+        host.querySelectorAll('[data-panel]').forEach(p => { p.style.display = (p.dataset.panel === tab) ? '' : 'none'; });
+        // also support [data-view] (sub-view switches like map/table)
+        if (segBtn.dataset.view) {
+          host.querySelectorAll(`[data-viewgroup="${segBtn.dataset.viewgroup || ''}"]`).forEach(v => {
+            v.style.display = (v.dataset.view === segBtn.dataset.view) ? '' : 'none';
+          });
+        }
+      }
+    });
+  }
+
+  // crude client-side filter: rows whose text includes the chip label (data-match)
+  function applyFilter(scope, group) {
+    const active = Array.from(group.querySelectorAll('.fchip.active')).map(c => (c.dataset.match || c.textContent).trim().toLowerCase());
+    const tableSel = group.getAttribute('data-target');
+    if (!tableSel) return;
+    const tbody = (scope.querySelector ? scope.querySelector(tableSel) : null) || document.querySelector(tableSel);
+    if (!tbody) return;
+    const showAll = active.length === 0 || active.includes('all');
+    tbody.querySelectorAll('tr').forEach(tr => {
+      if (showAll) { tr.style.display = ''; return; }
+      const txt = tr.textContent.toLowerCase();
+      tr.style.display = active.some(a => txt.includes(a)) ? '' : 'none';
+    });
+  }
+
+  // search box: live-filter every table on the page by row text
+  function wireSearch() {
+    const inp = document.querySelector('.search input');
+    if (!inp) return;
+    inp.addEventListener('input', () => {
+      const q = inp.value.trim().toLowerCase();
+      document.querySelectorAll('table.tbl tbody tr').forEach(tr => {
+        tr.style.display = (!q || tr.textContent.toLowerCase().includes(q)) ? '' : 'none';
+      });
+    });
+  }
+
+
   // generic drawer open/close via [data-drawer] triggers and #<id> drawers
   function wireDrawers() {
     document.body.addEventListener('click', e => {
@@ -424,5 +588,6 @@
       <polyline points="${pts}" stroke="${color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" opacity=".55"/></svg>`;
   }
 
-  window.Soltessa = { mount, icon, spark, openDrawer, closeDrawers, resolveIcons, openOnboard, NAV };
+  window.Soltessa = { mount, icon, spark, openDrawer, closeDrawers, resolveIcons, openOnboard, NAV,
+    modal, closeModal, drawer, confirmAction, toast, readForm };
 })();

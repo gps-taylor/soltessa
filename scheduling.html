@@ -20,7 +20,10 @@
         <h1 class="page-title">Scheduling</h1>
         <p class="page-sub">Coordinate warehouse pickup and on-site install, and manage the construction stages that drive option cutoffs. When a task slips, downstream dates recalculate automatically.</p>
       </div>
-      <div class="seg" id="view"><button class="active">Calendar</button><button>Master schedules</button></div>
+      <div class="flex gap-10">
+        <button class="btn primary"><span data-ic="plus"></span>Schedule install</button>
+        <div class="seg" id="view"><button class="active" data-v="cal">Calendar</button><button data-v="master">Master schedules</button></div>
+      </div>
     </div>
   </div>
 
@@ -117,7 +120,70 @@
     <div class="allow-track"><div class="allow-fill ${c[2]>80?'warn':''}" style="width:${c[2]}%;background:${c[2]>80?'var(--warn)':'var(--info)'}"></div></div>
     <div class="muted fs-12" style="margin-top:3px">${c[1]}</div></div>`).join('');
 
-  document.querySelectorAll('#view button').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('#view button').forEach(x=>x.classList.remove('active'));b.classList.add('active');}));
+  // ============ INTERACTIVITY ============
+  // Schedule install
+  document.querySelector('.page-head .btn.primary').addEventListener('click', () => S.modal({
+    eyebrow:'Scheduling', title:'Schedule an install',
+    body:`<div class="form-grid">
+      <label class="field"><span class="field-lbl">Lot</span><input data-field="lot" placeholder="Lot 14 · Sienna Pass"/></label>
+      <label class="field"><span class="field-lbl">Work type</span><select data-field="type"><option>Hardwood install</option><option>Tile install</option><option>Carpet install</option><option>Cabinet set</option><option>Countertop template</option><option>Material pickup</option></select></label>
+      <label class="field"><span class="field-lbl">Installer / crew</span><select data-field="crew"><option>Premier Floors</option><option>TileRight</option><option>Vegas Cabinet Co</option><option>StoneWorks</option></select></label>
+      <label class="field"><span class="field-lbl">Date</span><input data-field="date" placeholder="Aug 14, 2026"/></label>
+    </div>
+    <div class="notice info mt-16"><span data-ic="info"></span><div>Downstream task dates auto-recalculate if this shifts a dependency.</div></div>`,
+    actions:[{label:'Cancel',kind:'ghost'},{label:'Add to calendar',kind:'primary',icon:'check',onClick:(m)=>{const f=S.readForm(m);S.toast(`${f.type} scheduled for ${f.lot||'lot'} on ${f.date||'TBD'} (demo).`);}}] }));
+
+  // calendar events → detail
+  document.querySelectorAll('#cal .cal-ev').forEach(ev => { ev.style.cursor='pointer'; ev.addEventListener('click', () => {
+    const label = ev.textContent; const type = ev.classList.contains('install')?'Install':ev.classList.contains('pickup')?'Pickup':'Milestone';
+    S.modal({ eyebrow:'Calendar · '+type, title:label, size:'sm',
+      body:`<div class="meta-list"><div class="ml-row"><span class="ml-k">Type</span><span class="ml-v"><span class="tag">${type}</span></span></div><div class="ml-row"><span class="ml-k">Crew</span><span class="ml-v">Premier Floors</span></div><div class="ml-row"><span class="ml-k">Materials</span><span class="ml-v">From PO-3319</span></div></div>`,
+      actions:[{label:'Close',kind:'ghost'},{label:'Reschedule',kind:'primary',icon:'edit',onClick:()=>S.toast('Reschedule — downstream dates will recalculate (demo).')}] });
+  });});
+
+  // cutoff rows → detail (extend / lock now)
+  document.querySelectorAll('#cutoffs > div').forEach((row,i)=>{ row.style.cursor='pointer'; row.addEventListener('click',()=>{
+    const c=cutoffs[i];
+    S.modal({ eyebrow:'Option cutoff', title:c[0], size:'sm',
+      body:`<div class="meta-list"><div class="ml-row"><span class="ml-k">Construction stage</span><span class="ml-v">${c[1]}</span></div><div class="ml-row"><span class="ml-k">Cutoff date</span><span class="ml-v">${c[2]}</span></div><div class="ml-row"><span class="ml-k">Status</span><span class="ml-v"><span class="badge ${c[3]}"><span class="d"></span>${c[4]}</span></span></div></div>
+        <div class="notice warn mt-16"><span data-ic="alert"></span><div>Reaching this stage locks the matching selections in Design Studio.</div></div>`,
+      actions:[{label:'Extend cutoff',kind:'ghost',onClick:()=>S.toast(`${c[0]} cutoff extended (demo).`)},{label:'Lock now',kind:'primary',icon:'check',onClick:()=>S.toast(`${c[0]} selections locked (demo).`)}] });
+  });});
+
+  // master schedule rows → edit lead time
+  document.querySelectorAll('#master tr').forEach((tr,i)=>{ tr.classList.add('tbl-clickable'); tr.addEventListener('click',()=>{
+    const m=master[i];
+    S.modal({ eyebrow:'Master schedule task', title:m[0], size:'sm',
+      body:`<div class="form-grid"><label class="field"><span class="field-lbl">Depends on</span><input data-field="dep" value="${m[1]}"/></label><label class="field"><span class="field-lbl">Lead time</span><input data-field="lead" value="${m[2]}"/></label></div>`,
+      actions:[{label:'Cancel',kind:'ghost'},{label:'Save task',kind:'primary',icon:'check',onClick:()=>S.toast(`“${m[0]}” updated — schedule regenerated (demo).`)}] });
+  });});
+
+  // crew rows → detail
+  document.querySelectorAll('#crew > div').forEach((row,i)=>{ row.style.cursor='pointer'; row.addEventListener('click',()=>{
+    const c=crew[i];
+    S.drawer({ eyebrow:'Crew load', title:c[0], width:460,
+      body:`<div class="meta-list mb-16"><div class="ml-row"><span class="ml-k">Categories</span><span class="ml-v">${c[1]}</span></div><div class="ml-row"><span class="ml-k">Booked this week</span><span class="ml-v t-mono">${c[2]}%</span></div><div class="ml-row"><span class="ml-k">Jobs scheduled</span><span class="ml-v t-mono">${Math.round(c[2]/12)}</span></div></div>
+        ${c[2]>80?'<div class="notice warn"><span data-ic="alert"></span><div>Near capacity — consider redistributing jobs.</div></div>':'<div class="notice info"><span data-ic="info"></span><div>Healthy utilization.</div></div>'}
+        <div class="flex gap-8 mt-16"><button class="btn ghost sm" data-drawer-close>Close</button></div>` });
+  });});
+
+  // double-booking resolve
+  const conflict = document.querySelector('.notice.danger');
+  if (conflict) { conflict.style.cursor='pointer'; conflict.addEventListener('click', () => S.confirmAction({
+    eyebrow:'Conflict', title:'Resolve double-booking', danger:true, icon:'check',
+    message:'Premier Floors is booked for Lot 14 and Lot 05 at the same time Thursday. Move Lot 05 carpet pickup to Friday 8:00 AM?',
+    confirmLabel:'Move to Friday', onConfirm:()=>S.toast('Lot 05 pickup moved to Friday — conflict resolved (demo).') })); }
+
+  // view toggle: Calendar vs Master schedules
+  const calGrid = document.querySelector('.grid.grid-2-1');
+  document.querySelectorAll('#view button').forEach(b=>b.addEventListener('click',()=>{
+    document.querySelectorAll('#view button').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    const v=b.dataset.v;
+    // master schedule card is the 2nd grid block; emphasize by scrolling
+    if (v==='master') { document.getElementById('master').scrollIntoView({behavior:'smooth',block:'center'}); S.toast('Showing reusable master schedule templates.'); }
+    else { window.scrollTo({top:0,behavior:'smooth'}); }
+  }));
 </script>
 </body>
 </html>

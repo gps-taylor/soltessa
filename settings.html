@@ -201,7 +201,70 @@
   document.getElementById('rules').innerHTML=rules.map(r=>`<div class="flex between items-center"><div><div class="fw-600 fs-13">${r[0]}</div><div class="muted fs-12">${r[1]}</div></div><span class="badge ${r[2]}"><span class="d"></span>${r[3]}</span></div>`).join('');
 
   const ep=[['Catalog','catalog','248 SKUs'],['Plans','layers','4 plans'],['Communities','map','4 active'],['Builder Programs','grid','availability matrix'],['Suppliers','truck','6 suppliers'],['Installers','users','4 crews']];
-  document.getElementById('entrypoints').innerHTML=ep.map(e=>`<a class="card-mini"><span class="card-mini-ic">${S.icon(e[1])}</span><div><div class="fw-600 fs-13">${e[0]}</div><div class="muted fs-12">${e[2]}</div></div><span class="card-mini-arrow">${S.icon('chevronR')}</span></a>`).join('');
+  document.getElementById('entrypoints').innerHTML=ep.map(e=>`<a class="card-mini" data-ep="${e[0]}"><span class="card-mini-ic">${S.icon(e[1])}</span><div><div class="fw-600 fs-13">${e[0]}</div><div class="muted fs-12">${e[2]}</div></div><span class="card-mini-arrow">${S.icon('chevronR')}</span></a>`).join('');
+
+  // ============ INTERACTIVITY ============
+  // Invite user
+  const inviteBtn = document.querySelector('[data-panel="users"] .btn');
+  inviteBtn && inviteBtn.addEventListener('click', () => S.modal({ eyebrow:'Users & roles', title:'Invite a user',
+    body:`<div class="form-grid">
+      <label class="field"><span class="field-lbl">Name</span><input data-field="name" placeholder="Full name"/></label>
+      <label class="field"><span class="field-lbl">Email</span><input data-field="email" placeholder="name@company.com"/></label>
+      <label class="field span-2"><span class="field-lbl">Role</span><select data-field="role"><option>Tenant Admin</option><option>Design Center Lead</option><option>Designer</option><option>Purchasing</option><option>Scheduler</option><option>Sales</option></select></label>
+    </div>`,
+    actions:[{label:'Cancel',kind:'ghost'},{label:'Send invite',kind:'primary',icon:'send',onClick:(m)=>{const f=S.readForm(m);S.toast(`Invite sent to ${f.email||'user'} as ${f.role} (demo).`);}}] }));
+
+  // Add tenant
+  const addTenantBtn = document.querySelector('[data-panel="tenants"] .btn');
+  addTenantBtn && addTenantBtn.addEventListener('click', () => S.openOnboard ? S.openOnboard() : S.toast('Add tenant'));
+
+  // user rows → edit
+  document.querySelectorAll('#users tr').forEach((tr,i)=>{ tr.classList.add('tbl-clickable'); tr.addEventListener('click',()=>{
+    const u=users[i];
+    S.modal({ eyebrow:'User', title:u[0], size:'sm',
+      body:`<div class="form-grid">
+        <label class="field span-2"><span class="field-lbl">Role</span><select data-field="role"><option ${u[1]==='Tenant Admin'?'selected':''}>Tenant Admin</option><option ${u[1]==='Design Center Lead'?'selected':''}>Design Center Lead</option><option ${u[1]==='Designer'?'selected':''}>Designer</option><option ${u[1]==='Purchasing'?'selected':''}>Purchasing</option><option ${u[1]==='Scheduler'?'selected':''}>Scheduler</option><option ${u[1]==='Sales'?'selected':''}>Sales</option></select></label>
+      </div>`,
+      actions:[{label:'Deactivate',kind:'ghost',onClick:()=>S.toast(`${u[0]} deactivated (demo).`)},{label:'Save role',kind:'primary',icon:'check',onClick:()=>S.toast(`${u[0]}'s role updated (demo).`)}] });
+  });});
+
+  // tenant rows → manage
+  document.querySelectorAll('#tenants tr').forEach((tr,i)=>{ tr.classList.add('tbl-clickable'); tr.addEventListener('click',()=>{
+    const t=tenants[i];
+    S.drawer({ eyebrow:'Tenant', title:t[0], width:480,
+      body:`<div class="meta-list mb-16">
+        <div class="ml-row"><span class="ml-k">Type</span><span class="ml-v"><span class="tag">${t[1]}</span></span></div>
+        <div class="ml-row"><span class="ml-k">Communities</span><span class="ml-v t-mono">${t[2]}</span></div>
+        <div class="ml-row"><span class="ml-k">Users</span><span class="ml-v t-mono">${t[3]}</span></div>
+        <div class="ml-row"><span class="ml-k">Catalog SKUs</span><span class="ml-v t-mono">${t[4]}</span></div>
+        <div class="ml-row"><span class="ml-k">Status</span><span class="ml-v">${t[5]}</span></div>
+      </div>
+      <div class="flex gap-8 mt-16"><button class="btn primary sm" data-toast="Tenant settings opened (demo).">${S.icon('sliders')}Configure</button><button class="btn ghost sm" data-drawer-close>Close</button></div>` });
+  });});
+
+  // doc + email template rows → edit
+  document.querySelectorAll('#doctpl tr').forEach((tr,i)=>{ tr.addEventListener('click',()=>{
+    const d=doctpl[i];
+    S.modal({ eyebrow:'Document template · '+d[1], title:d[0],
+      body:`<p class="modal-intro">Edit boilerplate and merge fields. Changes apply to all future generated documents.</p>
+        <label class="field"><span class="field-lbl">Template body</span><textarea data-field="body" rows="5" style="border:1px solid var(--line-2);border-radius:9px;padding:10px;font-family:inherit;font-size:13px;resize:vertical">Dear {{buyer.name}},\n\nThis ${d[0]} covers your selections for {{lot.number}} · {{plan.name}}…</textarea></label>`,
+      actions:[{label:'Cancel',kind:'ghost'},{label:'Save template',kind:'primary',icon:'check',onClick:()=>S.toast(`${d[0]} template saved (demo).`)}] });
+  });});
+  document.querySelectorAll('#emailtpl tr').forEach((tr,i)=>{ tr.addEventListener('click',()=>{
+    const e=emailtpl[i]; const on=e[2].includes('>On');
+    S.confirmAction({ eyebrow:'Email template', title:e[0], icon:'check',
+      message:`Trigger: ${e[1]}. This template is currently ${on?'ON':'OFF'}. ${on?'Turn it off?':'Turn it on?'}`,
+      confirmLabel:on?'Turn off':'Turn on', onConfirm:()=>S.toast(`“${e[0]}” turned ${on?'off':'on'} (demo).`) });
+  });});
+
+  // entrypoint cards → route
+  const epRoute={Catalog:'catalog.html',Plans:'catalog.html',Communities:'lots.html','Builder Programs':'catalog.html',Suppliers:'catalog.html',Installers:'catalog.html'};
+  document.querySelectorAll('#entrypoints .card-mini').forEach(a=>a.addEventListener('click',()=>{ location.href=epRoute[a.dataset.ep]||'catalog.html'; }));
+
+  // rule rows → toggle
+  document.querySelectorAll('#rules > div').forEach((row,i)=>{ row.style.cursor='pointer'; row.addEventListener('click',()=>{
+    const r=rules[i]; S.toast(`Rule “${r[0]}” — opening configuration (demo).`);
+  });});
 
   // tabs
   document.querySelectorAll('#tabs button').forEach(b=>b.addEventListener('click',()=>{

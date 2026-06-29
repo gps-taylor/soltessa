@@ -65,10 +65,10 @@
             <div class="fw-600"><span class="badge accent"><span class="d"></span>Selections open</span></div>
           </div>
         </div>
-        <div class="seg">
-          <button class="active">Products</button>
-          <button>Colors</button>
-          <button>Takeoffs</button>
+        <div class="seg" id="studioTabs">
+          <button class="active" data-tab="products">Products</button>
+          <button data-tab="colors">Colors</button>
+          <button data-tab="takeoffs">Takeoffs</button>
         </div>
       </div>
     </div>
@@ -83,7 +83,9 @@
   <div class="studio">
     <!-- LEFT: room-by-room selection -->
     <div>
-      <div id="rooms"></div>
+      <div data-panel="products"><div id="rooms"></div></div>
+      <div data-panel="colors" style="display:none"><div id="colorsPanel"></div></div>
+      <div data-panel="takeoffs" style="display:none"><div id="takeoffsPanel"></div></div>
     </div>
 
     <!-- RIGHT: live allowance panel -->
@@ -240,6 +242,96 @@
   `;
   S.resolveIcons(document.getElementById('calcBody'));
   S.resolveIcons(document.getElementById('calcDrawer'));
+
+  // ============ INTERACTIVITY ============
+  // Colors panel (distinct color-selection step)
+  const colorRows = [
+    ['Great Room', 'White Oak — Wirebrushed', 'Natural', ['Natural','Smoked','Driftwood'], 'ok'],
+    ['Kitchen', 'Quartz — Calacatta Gold', 'Calacatta Gold', ['Calacatta Gold','Calacatta Nuvo','Brittanicca'], 'ok'],
+    ['Kitchen', 'Shaker Maple', 'Pure White', ['Pure White','Dover White','Linen','Espresso'], 'warn'],
+    ['Primary Bath', 'Carrara Look 12×24', 'Bianco', ['Bianco','Grigio','Statuario'], 'outstanding'],
+    ['Primary Bed', 'Mohave Plush Carpet', '— not selected —', ['Greige','Sandstone','Pewter'], 'outstanding'],
+  ];
+  document.getElementById('colorsPanel').innerHTML = `
+    <div class="notice info mb-16"><span data-ic="palette"></span><div>Color selection is a <b>distinct step</b> from product selection — it often happens later and has its own deadlines. <span class="prov boss">BOSS</span></div></div>
+    <div class="card"><div class="card-head"><div class="card-title"><span data-ic="swatch"></span>Color schedule</div><span class="card-sub">Per-room finish choices</span></div>
+    <div class="card-body flush"><div class="tbl-wrap"><table class="tbl tbl-clickable"><thead><tr><th>Room</th><th>Product line</th><th>Color / finish</th><th class="right">Status</th></tr></thead><tbody id="colorBody"></tbody></table></div></div></div>`;
+  const stMap = { ok:'<span class="badge ok"><span class="d"></span>Selected', warn:'<span class="badge warn"><span class="d"></span>Tentative', outstanding:'<span class="badge danger"><span class="d"></span>Outstanding' };
+  document.getElementById('colorBody').innerHTML = colorRows.map((c,i) => `<tr data-cidx="${i}"><td class="muted">${c[0]}</td><td class="primary">${c[1]}</td><td>${c[2].startsWith('—')?'<span class="muted">'+c[2]+'</span>':c[2]}</td><td class="right">${stMap[c[4]]}</span></td></tr>`).join('');
+  S.resolveIcons(document.getElementById('colorsPanel'));
+  document.querySelectorAll('#colorBody tr').forEach(tr => tr.addEventListener('click', () => {
+    const c = colorRows[+tr.dataset.cidx];
+    S.modal({ eyebrow: c[0] + ' · color selection', title: c[1],
+      body: `<p class="modal-intro">Choose the specific color / finish for this product line.</p>
+        <div class="swatch-grid">${c[3].map((opt,i)=>`<label class="swatch-opt ${opt===c[2]?'on':''}"><input type="radio" name="col" ${opt===c[2]?'checked':''} data-opt="${opt}"><span class="swatch" style="background:${['#c9a878','#b98a5e','#a8916f','#6f7479','#cdbfa6','#ede9e0'][i%6]}"></span><span class="swatch-name">${opt}</span></label>`).join('')}</div>`,
+      actions: [{ label:'Cancel', kind:'ghost' }, { label:'Save color', kind:'primary', icon:'check', onClick:(m)=>{ const sel=m.querySelector('input[name=col]:checked'); S.toast(`${c[1]} → ${sel?sel.dataset.opt:c[2]} saved for ${c[0]}.`); } }] });
+  }));
+
+  // Takeoffs panel
+  const takeoffs = [
+    ['Great Room','Hardwood','sq ft', 422.4],['Kitchen','Tile','sq ft', 268.0],['Kitchen','Cabinets','lin ft', 38.0],
+    ['Kitchen','Countertops','sq ft', 64.0],['Primary Bed','Carpet','sq yd', 30.0],['Primary Bath','Tile','sq ft', 146.0],
+    ['Bed 2 & 3','Carpet','sq yd', 37.0],['Entry / Hall','Tile','sq ft', 96.0],
+  ];
+  document.getElementById('takeoffsPanel').innerHTML = `
+    <div class="notice accent mb-16"><span data-ic="ruler"></span><div>Auto-calculated per lot from plan dimensions, in each category's correct unit — the version purchasing and installers trust. <span class="prov conf">confirmed</span></div></div>
+    <div class="card"><div class="card-head"><div class="card-title"><span data-ic="ruler"></span>Measurements & takeoffs</div><button class="btn ghost sm" data-toast="Takeoff sheet exported (demo).">${S.icon('download')}Export</button></div>
+    <div class="card-body flush"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Room</th><th>Category</th><th>Unit</th><th class="right">Order qty</th></tr></thead><tbody>${takeoffs.map(t=>`<tr><td class="primary">${t[0]}</td><td><span class="tag">${t[1]}</span></td><td class="muted t-mono">${t[2]}</td><td class="num right tnum fw-600">${t[3].toFixed(1)}</td></tr>`).join('')}</tbody></table></div></div></div>`;
+  S.resolveIcons(document.getElementById('takeoffsPanel'));
+
+  // Scenarios — selectable (radio behavior), update total
+  const scenTotals = { 'Upgraded kitchen':'+$1,040', 'Builder-grade baseline':'$0', 'Full premium package':'+$4,820' };
+  function bindScenarios() {
+    document.querySelectorAll('#scenarios > div').forEach((row,i) => {
+      row.style.cursor='pointer';
+      row.addEventListener('click', () => {
+        document.querySelectorAll('#scenarios > div').forEach(r=>{ r.style.background=''; const dot=r.querySelector('span span'); const ring=r.querySelector('span'); if(ring){ring.style.border='2px solid var(--line-2)';} if(dot)dot.remove(); });
+        row.style.background='var(--accent-bg)';
+        const ring=row.querySelector('span'); ring.style.border='2px solid var(--accent)'; ring.innerHTML='<span style="width:7px;height:7px;border-radius:50%;background:var(--accent)"></span>';
+        const name=row.querySelector('.fw-600').textContent;
+        const tot=scenTotals[name]||'$0';
+        document.querySelector('.t-display.fw-700').textContent=tot;
+        document.querySelector('.t-display.fw-700').style.color = tot==='$0'?'var(--ok)':'var(--danger)';
+        S.toast(`Scenario “${name}” applied — total ${tot} over allowance.`);
+      });
+    });
+  }
+  bindScenarios();
+
+  // header + finalize buttons
+  const topBtns = document.querySelectorAll('.page-head .btn');
+  topBtns[0].addEventListener('click', () => { document.querySelector('#studioTabs button[data-tab="products"]').click(); S.toast('Showing all what-if scenarios in the right panel.'); });
+  topBtns[1].addEventListener('click', () => S.modal({ eyebrow:'Design Studio', title:'Start a new selection session',
+    body:`<p class="modal-intro">Open a buyer's finish-selection session.</p><div class="form-grid"><label class="field"><span class="field-lbl">Buyer</span><input data-field="buyer" placeholder="Buyer name"/></label><label class="field"><span class="field-lbl">Lot</span><input data-field="lot" placeholder="Lot #"/></label><label class="field span-2"><span class="field-lbl">Plan</span><select data-field="plan">${DEMO.plans.map(p=>`<option>${p.name}</option>`).join('')}</select></label></div>`,
+    actions:[{label:'Cancel',kind:'ghost'},{label:'Open session',kind:'primary',icon:'studio',onClick:(m)=>{const f=S.readForm(m);S.toast(`Session opened for ${f.buyer||'new buyer'}.`);}}] }));
+
+  document.querySelector('.studio .btn.primary[style*="width:100%"]').addEventListener('click', () => {
+    S.confirmAction({ eyebrow:'Design Studio', title:'Finalize selections', icon:'send',
+      message:'Lock the current selection package and raise a Price Request for items needing vendor pricing? You can still re-open before contract.',
+      confirmLabel:'Finalize → Price Request', onConfirm:()=>{ S.toast('Selections finalized — Price Request PR-231 created.'); setTimeout(()=>location.href='quotes.html',1000); } });
+  });
+
+  // selection rows → product picker modal (swap product)
+  document.querySelectorAll('#rooms .sel-row, #rooms tr').forEach(()=>{}); // rows are rendered as table rows below
+  // wire after rooms render: delegate
+  document.getElementById('rooms').addEventListener('click', e => {
+    if (e.target.closest('[data-drawer]')) return; // calc button handled by drawer
+    const tr = e.target.closest('tr');
+    if (!tr || !tr.querySelector('.primary')) return;
+    const name = tr.querySelector('.primary') ? tr.querySelector('td').textContent.trim() : '';
+    const cat = (tr.querySelector('.tag')||{}).textContent || '';
+    const options = DEMO.catalog.filter(c => c.cat === cat || cat==='');
+    S.modal({ eyebrow:'Swap product', title: name || 'Change selection', size:'lg',
+      body:`<p class="modal-intro">Pick a replacement from the price book. Net-over-standard recalculates automatically.</p>
+        <div class="prod-grid">${(options.length?options:DEMO.catalog).slice(0,8).map(c=>`<button class="prod-card" data-toast="${c.name} selected — line updated, net recalculated.">
+          <span class="swatch" style="background:${c.color}"></span>
+          <span class="prod-name">${c.name}</span>
+          <span class="prod-meta">${c.cat} · $${c.sell.toFixed(2)}/${c.unit}</span></button>`).join('')}</div>`,
+      actions:[{label:'Close',kind:'ghost'}] });
+  });
+
+  // calculator Apply button (inside drawer)
+  document.querySelector('#calcBody .btn.primary')?.addEventListener('click', () => { S.closeDrawers(); S.toast('Applied 422.4 sq ft to White Oak — Great Room line.'); });
 </script>
 </body>
 </html>

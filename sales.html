@@ -29,7 +29,7 @@
   <div class="grid grid-2-1 mb-16">
     <div class="card">
       <div class="card-head"><div class="card-title"><span data-ic="sales"></span>Buyers</div>
-        <div class="tbl-tools"><span class="fchip active"><span data-ic="filter"></span>All</span><span class="fchip">In escrow</span><span class="fchip">Closed</span></div>
+        <div class="tbl-tools" data-target="#buyers" data-filter-scope><span class="fchip active" data-match="all"><span data-ic="filter"></span>All</span><span class="fchip" data-match="escrow">In escrow</span><span class="fchip" data-match="closed">Closed</span></div>
       </div>
       <div class="card-body flush"><div class="tbl-wrap"><table class="tbl tbl-clickable">
         <thead><tr><th>Buyer</th><th>Lot / Plan</th><th class="right">Option deposit</th><th class="right">Balance over allow.</th><th>Status</th></tr></thead>
@@ -89,7 +89,64 @@
     ['Option Selection Agreement','Marcus Webb','Selection','Jun 27','<span class="badge warn"><span class="d"></span>Out for signature'],
     ['Change Order Acknowledgment','Raj & Priya Patel','Change order','Jun 28','<span class="badge accent"><span class="d"></span>Draft'],
   ];
-  document.getElementById('docs').innerHTML=docs.map(d=>`<tr><td class="primary">${d[0]}</td><td class="muted">${d[1]}</td><td><span class="tag">${d[2]}</span></td><td class="num right muted">${d[3]}</td><td class="right">${d[4]}</span></td></tr>`).join('');
+  document.getElementById('docs').innerHTML=docs.map(d=>`<tr data-didx="${docs.indexOf(d)}"><td class="primary">${d[0]}</td><td class="muted">${d[1]}</td><td><span class="tag">${d[2]}</span></td><td class="num right muted">${d[3]}</td><td class="right">${d[4]}</span></td></tr>`).join('');
+
+  // ============ INTERACTIVITY ============
+  // Add buyer
+  document.querySelector('.page-head .btn.primary').addEventListener('click', () => S.modal({
+    eyebrow:'Sales', title:'Add buyer',
+    body:`<div class="form-grid">
+      <label class="field span-2"><span class="field-lbl">Buyer name(s)</span><input data-field="name" placeholder="e.g. Jordan & Casey Lee"/></label>
+      <label class="field"><span class="field-lbl">Lot</span><input data-field="lot" placeholder="Lot 27"/></label>
+      <label class="field"><span class="field-lbl">Plan</span><select data-field="plan">${DEMO.plans.map(p=>`<option>${p.name}</option>`).join('')}</select></label>
+      <label class="field"><span class="field-lbl">Option deposit</span><input data-field="dep" placeholder="$2,500"/></label>
+      <label class="field"><span class="field-lbl">Status</span><select data-field="status"><option>In escrow</option><option>Contingency</option><option>In production</option></select></label>
+    </div>`,
+    actions:[{label:'Cancel',kind:'ghost'},{label:'Add buyer',kind:'primary',icon:'plus',onClick:(m)=>{const f=S.readForm(m);S.toast(`${f.name||'New buyer'} added on ${f.lot||'lot'} (demo).`);}}] }));
+
+  // buyer rows → record
+  document.querySelectorAll('#buyers tr').forEach((tr,i)=>tr.addEventListener('click',()=>{
+    const b=buyers[i]; const status=b[4].replace(/<[^>]+>/g,'').trim();
+    S.drawer({ eyebrow:'Buyer record', title:b[0], width:500,
+      body:`<div class="meta-list mb-16">
+        <div class="ml-row"><span class="ml-k">Lot / Plan</span><span class="ml-v">${b[1]}</span></div>
+        <div class="ml-row"><span class="ml-k">Option deposit</span><span class="ml-v t-mono">${b[2]}</span></div>
+        <div class="ml-row"><span class="ml-k">Balance over allowance</span><span class="ml-v t-mono" style="color:var(--danger)">${b[3]}</span></div>
+        <div class="ml-row"><span class="ml-k">Status</span><span class="ml-v">${b[4]}</span></div>
+      </div>
+      <div class="divider"><span class="lbl">Quick actions</span><span class="line"></span></div>
+      <div class="flex gap-8 wrap mt-16">
+        <button class="btn primary sm" data-toast="Payment recorded (demo).">${S.icon('dollar')}Record payment</button>
+        <button class="btn ghost sm" data-toast="Agreement generated (demo).">${S.icon('file')}Generate agreement</button>
+        <button class="btn ghost sm" data-drawer-close>Close</button>
+      </div>` });
+  }));
+
+  // milestone rows → confirm action
+  document.querySelectorAll('#milestones > div').forEach((row,i)=>{ row.style.cursor='pointer'; row.addEventListener('click',()=>{
+    const m=ms[i];
+    S.confirmAction({ eyebrow:'Escrow & contingency', title:m[0], icon:'check',
+      message:`${m[0]} is due ${m[1]} (${m[3]}). Mark this milestone complete?`,
+      confirmLabel:'Mark complete', onConfirm:()=>S.toast(`“${m[0]}” marked complete (demo).`) });
+  });});
+
+  // agreement rows → preview
+  document.querySelectorAll('#docs tr').forEach((tr,i)=>tr.addEventListener('click',()=>{
+    const d=docs[i]; const status=d[4].replace(/<[^>]+>/g,'').trim();
+    S.modal({ eyebrow:d[1], title:d[0],
+      body:`<div class="doc-preview"><div class="meta-list">
+        <div class="ml-row"><span class="ml-k">Document type</span><span class="ml-v"><span class="tag">${d[2]}</span></span></div>
+        <div class="ml-row"><span class="ml-k">Buyer</span><span class="ml-v">${d[1]}</span></div>
+        <div class="ml-row"><span class="ml-k">Generated</span><span class="ml-v">${d[3]}</span></div>
+        <div class="ml-row"><span class="ml-k">Status</span><span class="ml-v">${d[4]}</span></div>
+      </div></div>`,
+      actions: status==='Signed' ? [{label:'Close',kind:'ghost'},{label:'Download',kind:'primary',icon:'download',onClick:()=>S.toast(`${d[0]} downloaded (demo).`)}]
+        : [{label:'Close',kind:'ghost'},{label:'Send for signature',kind:'primary',icon:'send',onClick:()=>S.toast(`${d[0]} sent for signature (demo).`)}] });
+  }));
+
+  // KPI cards
+  const kpiR=['#buyers','#milestones','#buyers','#milestones'];
+  document.querySelectorAll('#kpis .kpi').forEach((c,i)=>{ c.style.cursor='pointer'; c.addEventListener('click',()=>{ const t=document.querySelector(kpiR[i]); if(t) t.scrollIntoView({behavior:'smooth',block:'center'}); }); });
 </script>
 </body>
 </html>

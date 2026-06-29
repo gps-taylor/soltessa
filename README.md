@@ -8,7 +8,7 @@ This repository is a **clickable front-end prototype** — a static site you can
 
 ## What this is (and isn't)
 
-- **Is:** a faithful, navigable picture of all ten modules, the shared shell, and the signature workflows — enough to validate scope, spark discussion, and align the team.
+- **Is:** a faithful, navigable picture of all ten modules, the shared shell, and the signature workflows — enough to validate scope, spark discussion, and align the team. **Every button, tab, filter, row, and form is wired** — selections open modals, tables filter, rows open detail drawers, and actions confirm with toasts (all against fabricated data).
 - **Isn't:** a working application. Nothing persists, forms don't submit, and the data is invented.
 
 **Product identity.** Soltessa is its own brand. **Builders Design Group (BDG)** — a Las Vegas flooring / cabinetry / countertop finisher — is the pilot tenant, so the demo data is BDG-flavored. The shell is **multi-tenant-aware** (note the builder/client switcher top-left) even though the first deployment is BDG-only.

@@ -30,7 +30,7 @@
     <div class="card">
       <div class="card-head">
         <div class="card-title"><span data-ic="purchasing"></span>Purchase order register</div>
-        <div class="tbl-tools"><span class="fchip active"><span data-ic="filter"></span>All</span><span class="fchip">Draft</span><span class="fchip">Issued</span><span class="fchip">Received</span></div>
+        <div class="tbl-tools" data-target="#po" data-filter-scope><span class="fchip active" data-match="all"><span data-ic="filter"></span>All</span><span class="fchip" data-match="Draft">Draft</span><span class="fchip" data-match="Issued">Issued</span><span class="fchip" data-match="Received">Received</span></div>
       </div>
       <div class="card-body flush"><div class="tbl-wrap"><table class="tbl tbl-clickable">
         <thead><tr><th>PO</th><th>Supplier</th><th>Lot / Community</th><th class="right">Amount</th><th class="right">Status</th></tr></thead>
@@ -101,6 +101,45 @@
       <button class="btn sm mt-16" style="width:100%"><span data-ic="send"></span>Issue PO</button>
     </div></div>`).join('');
   S.resolveIcons(document.getElementById('splits'));
+
+  // ============ INTERACTIVITY ============
+  // Generate POs from quote
+  document.querySelector('.page-head .btn.primary').addEventListener('click', () => S.modal({
+    eyebrow:'Purchasing', title:'Generate POs from quote',
+    body:`<p class="modal-intro">Pick an approved quote. Soltessa drafts purchase orders grouped by supplier automatically.</p>
+      <label class="field"><span class="field-lbl">Approved quote</span><select data-field="q"><option>Q-1043 · Lot 09 · Cholla Ridge · $48,200</option><option>Q-1039 · Lot 14 · Sienna Pass · $39,480</option></select></label>
+      <div class="notice info mt-16"><span data-ic="info"></span><div>POs will be split across the suppliers for each line's category.</div></div>`,
+    actions:[{label:'Cancel',kind:'ghost'},{label:'Draft POs',kind:'primary',icon:'layers',onClick:()=>S.toast('3 POs drafted and split by supplier — see preview below.')}] }));
+
+  // PO rows → detail w/ status action
+  document.querySelectorAll('#po tr').forEach((tr,i)=>tr.addEventListener('click',()=>{
+    const r=po[i]; const status=r[4].replace(/<[^>]+>/g,'').trim();
+    S.modal({ eyebrow:r[2], title:r[0]+' · '+r[1], size:'sm',
+      body:`<div class="meta-list">
+        <div class="ml-row"><span class="ml-k">Supplier</span><span class="ml-v">${r[1]}</span></div>
+        <div class="ml-row"><span class="ml-k">Lot</span><span class="ml-v">${r[2]}</span></div>
+        <div class="ml-row"><span class="ml-k">Amount</span><span class="ml-v t-mono">${r[3]}</span></div>
+        <div class="ml-row"><span class="ml-k">Status</span><span class="ml-v">${r[4]}</span></div>
+      </div>`,
+      actions: status==='Draft' ? [{label:'Close',kind:'ghost'},{label:'Issue PO',kind:'primary',icon:'send',onClick:()=>S.toast(`${r[0]} issued to ${r[1]} (demo).`)}]
+        : [{label:'Close',kind:'ghost'},{label:'View document',kind:'primary',icon:'file',onClick:()=>S.toast(`${r[0]} document opened (demo).`)}] });
+  }));
+
+  // change-order rows → detail
+  document.querySelectorAll('#co > div').forEach((row,i)=>{ row.style.cursor='pointer'; row.addEventListener('click',()=>{
+    const c=co[i];
+    S.modal({ eyebrow:'Change order', title:c[0], size:'sm',
+      body:`<div class="meta-list"><div class="ml-row"><span class="ml-k">Description</span><span class="ml-v">${c[1]}</span></div><div class="ml-row"><span class="ml-k">Net amount</span><span class="ml-v t-mono">${c[2]}</span></div></div>
+        <div class="notice accent mt-16"><span data-ic="info"></span><div>Net-option logic applied: a matched contract change order and PO change order are linked.</div></div>`,
+      actions:[{label:'Close',kind:'ghost'},{label:'Approve CO',kind:'primary',icon:'check',onClick:()=>S.toast(`${c[0]} approved — contract + PO updated (demo).`)}] });
+  });});
+
+  // per-split Issue PO buttons
+  document.querySelectorAll('#splits .btn').forEach((b,i)=>b.addEventListener('click',(e)=>{
+    e.stopPropagation(); const s=splits[i];
+    b.innerHTML=S.icon('check')+'Issued'; b.classList.add('ghost'); b.disabled=true;
+    S.toast(`PO issued to ${s.sup} — ${s.amt} (demo).`);
+  }));
 </script>
 </body>
 </html>

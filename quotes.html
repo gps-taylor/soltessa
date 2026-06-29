@@ -69,10 +69,10 @@
   <div class="card">
     <div class="card-head">
       <div class="card-title"><span data-ic="list"></span>Buyer Selections register</div>
-      <div class="tbl-tools">
-        <span class="fchip active"><span data-ic="filter"></span>All stages</span>
-        <span class="fchip">Sienna Pass</span>
-        <span class="fchip">Desert Vista</span>
+      <div class="tbl-tools" data-target="#reg" data-filter-scope>
+        <span class="fchip active" data-match="all"><span data-ic="filter"></span>All stages</span>
+        <span class="fchip" data-match="Sienna Pass">Sienna Pass</span>
+        <span class="fchip" data-match="Desert Vista">Desert Vista</span>
       </div>
     </div>
     <div class="card-body flush"><div class="tbl-wrap"><table class="tbl tbl-clickable">
@@ -116,6 +116,59 @@
     const over=r[5]!=='$0';
     return `<tr><td class="primary">${r[0]}</td><td class="muted">${r[1]}</td><td>${r[2]}</td><td class="muted">${r[3]}</td><td>${r[4]}</span></td><td class="num tnum right" style="color:${over?'var(--danger)':'var(--ink-3)'}">${r[5]}</td></tr>`;
   }).join('');
+
+  // ============ INTERACTIVITY ============
+  // New price request
+  document.querySelector('.page-head .btn.primary').addEventListener('click', () => S.modal({
+    eyebrow:'Selections & Quotes', title:'Raise a price request',
+    body:`<p class="modal-intro">Request current or custom pricing from a vendor for a selected item.</p>
+      <div class="form-grid">
+        <label class="field span-2"><span class="field-lbl">Item / description</span><input data-field="item" placeholder="e.g. Calacatta Gold quartz — custom edge"/></label>
+        <label class="field"><span class="field-lbl">Vendor</span><select data-field="vendor"><option>Cambria</option><option>Daltile</option><option>Mohawk</option><option>Shaw</option><option>KraftMaid</option><option>MSI</option></select></label>
+        <label class="field"><span class="field-lbl">Lot</span><input data-field="lot" placeholder="Lot 22 · Desert Vista"/></label>
+        <label class="field span-2"><span class="field-lbl">Needed by</span><input data-field="due" placeholder="e.g. Jul 8"/></label>
+      </div>`,
+    actions:[{label:'Cancel',kind:'ghost'},{label:'Send request',kind:'primary',icon:'send',onClick:(m)=>{const f=S.readForm(m);S.toast(`Price request sent to ${f.vendor} (demo).`);}}] }));
+
+  // PR rows → detail / record answer
+  document.querySelectorAll('#pr tr').forEach((tr,i)=>tr.addEventListener('click',()=>{
+    const r=pr[i]; const answered=r[2].includes('Answered');
+    S.modal({ eyebrow:'Price request · '+r[1], title:r[0].split('·')[1]?.trim()||r[0],
+      body:`<div class="meta-list mb-16">
+        <div class="ml-row"><span class="ml-k">Request</span><span class="ml-v t-mono">${r[0].split('·')[0].trim()}</span></div>
+        <div class="ml-row"><span class="ml-k">Vendor</span><span class="ml-v">${r[1]}</span></div>
+        <div class="ml-row"><span class="ml-k">Status</span><span class="ml-v">${r[2]}</span></div>
+        <div class="ml-row"><span class="ml-k">Turnaround</span><span class="ml-v t-mono">${r[3]}</span></div>
+      </div>${answered?'':'<label class="field"><span class="field-lbl">Record returned price</span><input data-field="price" placeholder="e.g. $64.00 / sq ft"/></label>'}`,
+      actions: answered ? [{label:'Close',kind:'ghost'},{label:'Use in quote',kind:'primary',icon:'quotes',onClick:()=>S.toast('Price pulled into quote (demo).')}]
+        : [{label:'Cancel',kind:'ghost'},{label:'Record answer',kind:'primary',icon:'check',onClick:(m)=>{const f=S.readForm(m);S.toast(`Answer recorded for ${r[1]}${f.price?' — '+f.price:''} (demo).`);}}] });
+  }));
+
+  // Quote rows → quote detail w/ approve/send
+  document.querySelectorAll('#qt tr').forEach((tr,i)=>tr.addEventListener('click',()=>{
+    const q=qt[i]; const status=q[3].replace(/<[^>]+>/g,'').trim();
+    S.modal({ eyebrow:q[1], title:'Quote '+q[0], size:'lg',
+      body:`<div class="flex between items-center mb-16"><span class="t-display fw-700" style="font-size:24px">${q[2]}</span><span class="badge ${status==='Approved'?'ok':status==='Draft'?'accent':'info'}"><span class="d"></span>${status}</span></div>
+        <div class="doc-preview"><table class="tbl"><thead><tr><th>Line</th><th class="right">Qty</th><th class="right">Ext.</th></tr></thead><tbody>
+          <tr><td>Hardwood — Great Room</td><td class="num right">422 sq ft</td><td class="num right tnum">$3,355</td></tr>
+          <tr><td>Tile — Kitchen + baths</td><td class="num right">414 sq ft</td><td class="num right tnum">$2,301</td></tr>
+          <tr><td>Cabinets — Kitchen</td><td class="num right">38 lin ft</td><td class="num right tnum">$8,170</td></tr>
+          <tr><td>Countertops — Quartz</td><td class="num right">64 sq ft</td><td class="num right tnum">$4,096</td></tr>
+          <tr style="background:var(--accent-bg)"><td class="primary">Total</td><td></td><td class="num right primary tnum">${q[2]}</td></tr>
+        </tbody></table></div>`,
+      actions: status==='Draft' ? [{label:'Close',kind:'ghost'},{label:'Issue quote',kind:'primary',icon:'send',onClick:()=>S.toast(`Quote ${q[0]} issued to builder (demo).`)}]
+        : status==='Approved' ? [{label:'Close',kind:'ghost'},{label:'Generate POs',kind:'primary',icon:'purchasing',onClick:()=>{S.toast('Approved quote → generating POs…');setTimeout(()=>location.href='purchasing.html',900);}}]
+        : [{label:'Close',kind:'ghost'},{label:'Mark approved',kind:'primary',icon:'check',onClick:()=>S.toast(`Quote ${q[0]} marked approved (demo).`)}] });
+  }));
+
+  // register rows → route by stage
+  const regRoute={'Selection':'design-studio.html','Price Request':'quotes.html','Quote':'quotes.html','Contract':'sales.html','PO issued':'purchasing.html'};
+  document.querySelectorAll('#reg tr').forEach((tr,i)=>tr.addEventListener('click',()=>{
+    const r=reg[i]; const stage=r[4].replace(/<[^>]+>/g,'').trim();
+    S.modal({ eyebrow:r[1]+' · '+r[2], title:r[0], size:'sm',
+      body:`<div class="meta-list"><div class="ml-row"><span class="ml-k">Designer</span><span class="ml-v">${r[3]}</span></div><div class="ml-row"><span class="ml-k">Stage</span><span class="ml-v">${r[4]}</span></div><div class="ml-row"><span class="ml-k">Over allowance</span><span class="ml-v t-mono" style="color:${r[5]!=='$0'?'var(--danger)':'var(--ink-3)'}">${r[5]}</span></div></div>`,
+      actions:[{label:'Close',kind:'ghost'},{label:'Open '+stage,kind:'primary',icon:'arrowR',onClick:()=>location.href=(regRoute[stage]||'lots.html')}] });
+  }));
 </script>
 </body>
 </html>

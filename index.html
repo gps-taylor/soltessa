@@ -222,10 +222,105 @@
     { name: 'StoneWorks', type: 'Workers comp', days: 9, cls: 'warn' },
   ];
   document.getElementById('insurance').innerHTML = ins.map(i => `
-    <div class="flex items-center between">
+    <div class="flex items-center between ins-row" data-ins="${i.name}" style="cursor:pointer">
       <div><div class="fw-600">${i.name}</div><div class="muted fs-12">${i.type}</div></div>
       <span class="badge ${i.cls}"><span class="d"></span>${i.days} days</span>
     </div>`).join('');
+
+  // ============ INTERACTIVITY ============
+  const hdrBtns = document.querySelectorAll('.page-head .btn');
+  // Export brief
+  hdrBtns[0].addEventListener('click', () => {
+    S.modal({
+      eyebrow: 'Dashboard', title: 'Export daily brief',
+      body: `<p class="modal-intro">Generate a PDF snapshot of today's pipeline status, attention items, installs, and allowance pulse for the active development.</p>
+        <div class="form-grid">
+          <label class="field"><span class="field-lbl">Format</span><select data-field="fmt"><option>PDF</option><option>Excel</option><option>Email summary</option></select></label>
+          <label class="field"><span class="field-lbl">Scope</span><select data-field="scope"><option>Active development</option><option>All developments</option></select></label>
+          <label class="field span-2"><span class="field-lbl">Include</span>
+            <div class="chip-set" data-field="incl"><button class="chip-toggle on" data-val="KPIs">KPIs</button><button class="chip-toggle on" data-val="Attention queue">Attention queue</button><button class="chip-toggle on" data-val="Installs">Installs</button><button class="chip-toggle" data-val="Activity log">Activity log</button></div></label>
+        </div>`,
+      actions: [{ label: 'Cancel', kind: 'ghost' }, { label: 'Generate', kind: 'primary', icon: 'download', onClick: () => S.toast('Daily brief generated — download started (demo).') }],
+    });
+  });
+  // New selection session
+  hdrBtns[1].addEventListener('click', () => newSessionModal());
+  function newSessionModal() {
+    S.modal({
+      eyebrow: 'Design Studio', title: 'Start a new selection session',
+      body: `<p class="modal-intro">Open a buyer's finish-selection session against a plan and lot. Quantities auto-fill from plan dimensions.</p>
+        <div class="form-grid">
+          <label class="field"><span class="field-lbl">Buyer name</span><input data-field="buyer" placeholder="e.g. Jordan & Casey Lee" /></label>
+          <label class="field"><span class="field-lbl">Lot</span><input data-field="lot" placeholder="e.g. Lot 27" /></label>
+          <label class="field"><span class="field-lbl">Plan</span><select data-field="plan">${DEMO.plans.map(p => `<option>${p.name}</option>`).join('')}</select></label>
+          <label class="field"><span class="field-lbl">Designer</span><select data-field="designer"><option>Taylor Morgan</option><option>Dana Reyes</option></select></label>
+        </div>`,
+      actions: [{ label: 'Cancel', kind: 'ghost' }, { label: 'Open session', kind: 'primary', icon: 'studio', onClick: (m) => {
+        const f = S.readForm(m); S.toast(`Session opened for ${f.buyer || 'new buyer'} · ${f.plan}. Redirecting…`);
+        setTimeout(() => location.href = 'design-studio.html', 900);
+      } }],
+    });
+  }
+
+  // Lineage steps → drawer with stage detail
+  const stageDetail = {
+    'Plan + Allowance': 'Acacia 2210 · 2,210 sq ft · 3 bd / 2.5 ba. Allowances: Flooring $14,200 · Cabinets $9,800 · Countertops $6,400.',
+    'Selection': 'Finalized Jun 24 by Taylor Morgan. 9 line items across 8 rooms. Net over allowance: +$1,040.',
+    'Price Request': 'PR-228 (Cambria · Calacatta Gold) answered at $64/sq ft, 1.4-day turnaround.',
+    'Quote': 'Q-1043 issued $182k, approved by Sunridge Jun 26. Valid through Jul 26.',
+    'Contract': 'Buyer selection contract signed Jun 27. Option Selection Agreement on file.',
+    'Purchase Orders': '3 POs issued (Daltile, Shaw, KraftMaid). 1 change order (CO-58, +$312) pending.',
+    'Lot': 'Lot 14 · Sienna Pass. In production. Plan Acacia 2210. Lot premium $18,000.',
+    'Schedule': 'Hardwood great-room install Aug 12 · Premier Floors. Cabinet rough-in cutoff Jul 5.',
+    'Service': 'No post-close service record yet — home is pre-close.',
+  };
+  document.querySelectorAll('#lineage .lineage-step').forEach(step => {
+    step.style.cursor = 'pointer';
+    step.addEventListener('click', () => {
+      const label = step.querySelector('.ls-label').textContent;
+      S.drawer({ eyebrow: 'Lineage · Lot 14 · Sienna Pass', title: label,
+        body: `<div class="lineage condensed mb-16">${steps.map(s => `<div class="lineage-step ${s.label===label?'current':(s.cls==='done'?'done':'')}"><span class="ls-num">${s.cls==='done'&&s.label!==label?S.icon('check'):s.n}</span><span class="ls-label">${s.label}</span></div>`).join('<span class="lineage-sep"></span>')}</div>
+          <p class="fs-13" style="line-height:1.65;color:var(--ink-2)">${stageDetail[label] || ''}</p>
+          <div class="flex gap-8 mt-16"><button class="btn primary sm" data-toast="Opening full record (demo).">Open full record</button><button class="btn ghost sm" data-drawer-close>Close</button></div>` });
+    });
+  });
+
+  // KPI cards → jump to relevant module
+  const kpiTargets = ['lots.html','design-studio.html','quotes.html','quotes.html','purchasing.html','scheduling.html'];
+  document.querySelectorAll('#kpis .kpi').forEach((card, i) => {
+    card.style.cursor = 'pointer';
+    card.addEventListener('click', () => location.href = kpiTargets[i]);
+  });
+
+  // Attention rows → contextual modal routed by stage
+  const stageRoute = { 'Price Request':'quotes.html', 'Quote':'quotes.html', 'Selection':'design-studio.html', 'Purchase Order':'purchasing.html', 'Color Selection':'design-studio.html' };
+  document.querySelectorAll('#attn tr').forEach((tr, i) => {
+    tr.addEventListener('click', () => {
+      const r = attn[i];
+      S.modal({ eyebrow: r[1] + ' · ' + r[2], title: r[0], size: 'sm',
+        body: `<div class="meta-list">
+          <div class="ml-row"><span class="ml-k">Stage</span><span class="ml-v"><span class="tag">${r[1]}</span></span></div>
+          <div class="ml-row"><span class="ml-k">Lot / Community</span><span class="ml-v">${r[2]}</span></div>
+          <div class="ml-row"><span class="ml-k">Owner</span><span class="ml-v">${r[3]}</span></div>
+          <div class="ml-row"><span class="ml-k">Status</span><span class="ml-v">${r[4]}</span></div>
+        </div>`,
+        actions: [{ label: 'Dismiss', kind: 'ghost' }, { label: 'Go to ' + r[1], kind: 'primary', icon: 'arrowR', onClick: () => location.href = (stageRoute[r[1]] || 'lots.html') }] });
+    });
+  });
+
+  // Feed + install rows → toast acknowledgement
+  document.querySelectorAll('#feed .feed-item').forEach((el, i) => { el.style.cursor='pointer'; el.addEventListener('click', () => S.toast('Activity: ' + feed[i][2].replace(/<[^>]+>/g,''))); });
+  document.querySelectorAll('#installs tr').forEach((tr, i) => { tr.style.cursor='pointer'; tr.classList.add('tbl-clickable'); tr.addEventListener('click', () => location.href='scheduling.html'); });
+
+  // Insurance rows → modal
+  document.querySelectorAll('.ins-row').forEach((row, i) => row.addEventListener('click', () => {
+    const x = ins[i];
+    S.confirmAction({ eyebrow:'Supplier compliance', title: x.name + ' — ' + x.type, icon:'send',
+      message: `${x.type} certificate lapses in ${x.days} days. Send a renewal-request reminder to ${x.name}?`,
+      confirmLabel: 'Send reminder', onConfirm: () => S.toast('Renewal reminder sent to ' + x.name + ' (demo).') });
+  }));
+
+  // "View all" already links to quotes.html via href — leave as-is.
 </script>
 </body>
 </html>
